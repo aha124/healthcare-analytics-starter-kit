@@ -38,7 +38,7 @@ SELECT
     EXTRACT(WEEK FROM d) = EXTRACT(WEEK FROM CURRENT_DATE) AND EXTRACT(YEAR FROM d) = EXTRACT(YEAR FROM CURRENT_DATE) as is_current_week,
     EXTRACT(MONTH FROM d) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM d) = EXTRACT(YEAR FROM CURRENT_DATE) as is_current_month,
     EXTRACT(YEAR FROM d) = EXTRACT(YEAR FROM CURRENT_DATE) as is_current_year
-FROM generate_series('2020-01-01'::date, '2025-12-31'::date, '1 day'::interval) as d
+FROM generate_series('2020-01-01'::date, (CURRENT_DATE + INTERVAL '1 year')::date, '1 day'::interval) as d
 ON CONFLICT (date_key) DO NOTHING;
 
 -- ============================================================================
@@ -184,7 +184,7 @@ SELECT
     (random() * 3)::INTEGER as transfers_out,
     l.licensed_beds,
     l.operational_beds,
-    ROUND((0.6 + random() * 0.35) * 100, 1) as occupancy_rate
+    ROUND(((0.6 + random() * 0.35) * 100)::NUMERIC, 1) as occupancy_rate
 FROM generate_series(CURRENT_DATE - INTERVAL '90 days', CURRENT_DATE, '1 day'::INTERVAL) as d
 CROSS JOIN dim.dim_location l
 WHERE l.location_type IN ('Med-Surg', 'ICU', 'Step-Down')
