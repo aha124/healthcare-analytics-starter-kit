@@ -20,7 +20,7 @@
   "liveNow": false,
   "panels": [
     {
-      "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+      "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -54,11 +54,11 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+          "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT ed_volume FROM ed_throughput_daily WHERE census_date = CURRENT_DATE - INTERVAL '1 day' ORDER BY census_date DESC LIMIT 1",
+          "rawSql": "SELECT SUM(arrivals) as ed_volume FROM metrics.metric_ed_throughput WHERE metric_date >= CURRENT_DATE - INTERVAL '1 day'",
           "refId": "A"
         }
       ],
@@ -66,7 +66,7 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+      "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -75,8 +75,8 @@
             "mode": "absolute",
             "steps": [
               { "color": "green", "value": null },
-              { "color": "yellow", "value": 180 },
-              { "color": "red", "value": 240 }
+              { "color": "yellow", "value": 30 },
+              { "color": "red", "value": 45 }
             ]
           },
           "unit": "m"
@@ -100,11 +100,11 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+          "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT avg_door_to_provider_minutes FROM ed_throughput_daily WHERE census_date = CURRENT_DATE - INTERVAL '1 day' ORDER BY census_date DESC LIMIT 1",
+          "rawSql": "SELECT ROUND(AVG(avg_door_to_provider)::numeric, 0) as avg_wait FROM metrics.metric_ed_throughput WHERE metric_date >= CURRENT_DATE - INTERVAL '1 day'",
           "refId": "A"
         }
       ],
@@ -112,7 +112,7 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+      "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -146,11 +146,11 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+          "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT lwbs_count * 100.0 / NULLIF(ed_volume, 0) as lwbs_rate FROM ed_throughput_daily WHERE census_date = CURRENT_DATE - INTERVAL '1 day' ORDER BY census_date DESC LIMIT 1",
+          "rawSql": "SELECT ROUND((SUM(left_without_seen)::numeric / NULLIF(SUM(arrivals), 0) * 100), 1) as lwbs_rate FROM metrics.metric_ed_throughput WHERE metric_date >= CURRENT_DATE - INTERVAL '1 day'",
           "refId": "A"
         }
       ],
@@ -158,7 +158,7 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+      "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -192,11 +192,11 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+          "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT admission_rate FROM ed_throughput_daily WHERE census_date = CURRENT_DATE - INTERVAL '1 day' ORDER BY census_date DESC LIMIT 1",
+          "rawSql": "SELECT ROUND((SUM(admitted)::numeric / NULLIF(SUM(arrivals), 0) * 100), 1) as admission_rate FROM metrics.metric_ed_throughput WHERE metric_date >= CURRENT_DATE - INTERVAL '1 day'",
           "refId": "A"
         }
       ],
@@ -204,7 +204,7 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+      "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -245,19 +245,19 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+          "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT census_date as time, ed_volume as \"ED Volume\", admissions as \"Admissions\" FROM ed_throughput_daily WHERE census_date >= CURRENT_DATE - INTERVAL '30 days' ORDER BY census_date",
+          "rawSql": "SELECT metric_date as time, SUM(arrivals) as \"ED Volume\", SUM(admitted) as \"Admissions\" FROM metrics.metric_ed_throughput WHERE metric_date >= $__timeFrom()::date AND metric_date <= $__timeTo()::date GROUP BY metric_date ORDER BY metric_date",
           "refId": "A"
         }
       ],
-      "title": "ED Volume & Admissions (30 Days)",
+      "title": "ED Volume & Admissions",
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+      "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -285,7 +285,7 @@
             "mode": "absolute",
             "steps": [
               { "color": "green", "value": null },
-              { "color": "red", "value": 240 }
+              { "color": "red", "value": 45 }
             ]
           },
           "unit": "m"
@@ -301,19 +301,19 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+          "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT census_date as time, avg_door_to_provider_minutes as \"Door to Provider\", avg_ed_los_minutes as \"ED LOS\" FROM ed_throughput_daily WHERE census_date >= CURRENT_DATE - INTERVAL '30 days' ORDER BY census_date",
+          "rawSql": "SELECT metric_date as time, ROUND(AVG(avg_door_to_provider)::numeric, 0) as \"Door to Provider\", ROUND(AVG(avg_length_of_stay)::numeric, 0) as \"ED LOS\" FROM metrics.metric_ed_throughput WHERE metric_date >= $__timeFrom()::date AND metric_date <= $__timeTo()::date GROUP BY metric_date ORDER BY metric_date",
           "refId": "A"
         }
       ],
-      "title": "ED Throughput Times (30 Days)",
+      "title": "ED Throughput Times",
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+      "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -353,19 +353,19 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+          "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT census_date as time, total_census as \"Total Census\", icu_census as \"ICU\", med_surg_census as \"Med/Surg\", observation_census as \"Observation\" FROM patient_census_daily WHERE census_date >= CURRENT_DATE - INTERVAL '30 days' ORDER BY census_date",
+          "rawSql": "SELECT census_date as time, SUM(midnight_census) as \"Total Census\" FROM metrics.metric_patient_census WHERE census_date >= $__timeFrom()::date AND census_date <= $__timeTo()::date GROUP BY census_date ORDER BY census_date",
           "refId": "A"
         }
       ],
-      "title": "Inpatient Census by Service Line",
+      "title": "Inpatient Census",
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+      "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -404,11 +404,11 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+          "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT unit_name, current_census, staffed_beds, ROUND(current_census * 100.0 / NULLIF(staffed_beds, 0), 1) as occupancy_rate FROM unit_census_current ORDER BY occupancy_rate DESC",
+          "rawSql": "SELECT c.unit as unit_name, c.midnight_census as current_census, l.operational_beds as staffed_beds, ROUND((c.midnight_census::numeric / NULLIF(l.operational_beds, 0) * 100), 1) as occupancy_rate FROM metrics.metric_patient_census c JOIN dim.dim_location l ON c.unit = l.unit WHERE c.census_date >= CURRENT_DATE - INTERVAL '1 day' ORDER BY occupancy_rate DESC",
           "refId": "A"
         }
       ],
@@ -416,7 +416,7 @@
       "type": "table"
     },
     {
-      "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+      "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -438,19 +438,19 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+          "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT discharge_disposition, COUNT(*) as count FROM staging.encounters WHERE discharge_datetime >= CURRENT_DATE - INTERVAL '7 days' AND discharge_disposition IS NOT NULL GROUP BY discharge_disposition ORDER BY count DESC",
+          "rawSql": "SELECT discharge_disposition, COUNT(*) as count FROM dim.fact_encounter WHERE discharge_datetime >= $__timeFrom()::timestamp AND discharge_datetime <= $__timeTo()::timestamp AND discharge_disposition IS NOT NULL GROUP BY discharge_disposition ORDER BY count DESC",
           "refId": "A"
         }
       ],
-      "title": "Discharge Disposition (7 Days)",
+      "title": "Discharge Disposition",
       "type": "piechart"
     },
     {
-      "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+      "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "continuous-GrYlRd" },
@@ -491,15 +491,15 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+          "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT EXTRACT(HOUR FROM admit_datetime) as hour, COUNT(*) as admissions FROM staging.encounters WHERE admit_datetime >= CURRENT_DATE - INTERVAL '30 days' GROUP BY hour ORDER BY hour",
+          "rawSql": "SELECT metric_hour as hour, SUM(arrivals) as admissions FROM metrics.metric_ed_throughput WHERE metric_date >= $__timeFrom()::date AND metric_date <= $__timeTo()::date GROUP BY metric_hour ORDER BY metric_hour",
           "refId": "A"
         }
       ],
-      "title": "Admissions by Hour of Day (30 Days)",
+      "title": "ED Arrivals by Hour of Day",
       "type": "barchart"
     }
   ],
