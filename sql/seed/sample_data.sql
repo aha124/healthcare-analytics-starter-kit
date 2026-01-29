@@ -10,7 +10,7 @@
 -- POPULATE DATE DIMENSION (5 years: 2020-2025)
 -- ============================================================================
 
-INSERT INTO dim_date (date_key, full_date, year, quarter, month, month_name,
+INSERT INTO dim.dim_date (date_key, full_date, year, quarter, month, month_name,
     week_of_year, day_of_month, day_of_week, day_name, day_of_year,
     fiscal_year, fiscal_quarter, fiscal_month, is_weekend, is_holiday)
 SELECT
@@ -40,7 +40,7 @@ ON CONFLICT (date_key) DO NOTHING;
 -- SAMPLE LOCATIONS
 -- ============================================================================
 
-INSERT INTO dim_location (location_id, facility_name, building, floor, unit, location_type, service_line, licensed_beds, operational_beds, is_active)
+INSERT INTO dim.dim_location (location_id, facility_name, building, floor, unit, location_type, service_line, licensed_beds, operational_beds, is_active)
 VALUES
     ('LOC-001', 'Sample General Hospital', 'Main Building', '1', 'Emergency Department', 'ED', 'Emergency Medicine', 30, 28, true),
     ('LOC-002', 'Sample General Hospital', 'Main Building', '2', 'Medical ICU', 'ICU', 'Critical Care', 20, 18, true),
@@ -58,7 +58,7 @@ ON CONFLICT (location_id) DO NOTHING;
 -- SAMPLE PROVIDERS
 -- ============================================================================
 
-INSERT INTO dim_provider (provider_id, npi, first_name, last_name, full_name, credentials, specialty, department, provider_type, is_active)
+INSERT INTO dim.dim_provider (provider_id, npi, first_name, last_name, full_name, credentials, specialty, department, provider_type, is_active)
 VALUES
     ('PROV-001', '1234567890', 'Test', 'Physician One', 'Test Physician One, MD', 'MD', 'Internal Medicine', 'Medicine', 'Physician', true),
     ('PROV-002', '1234567891', 'Test', 'Physician Two', 'Test Physician Two, MD', 'MD', 'Emergency Medicine', 'Emergency', 'Physician', true),
@@ -73,7 +73,7 @@ ON CONFLICT (provider_id) DO NOTHING;
 -- SAMPLE DIAGNOSES (Common ICD-10 codes)
 -- ============================================================================
 
-INSERT INTO dim_diagnosis (code, code_system, short_description, long_description, chapter, category, is_chronic, is_comorbidity)
+INSERT INTO dim.dim_diagnosis (code, code_system, short_description, long_description, chapter, category, is_chronic, is_comorbidity)
 VALUES
     ('E11.9', 'ICD-10-CM', 'Type 2 DM w/o complications', 'Type 2 diabetes mellitus without complications', 'Endocrine diseases', 'E11', true, true),
     ('I10', 'ICD-10-CM', 'Essential hypertension', 'Essential (primary) hypertension', 'Circulatory system', 'I10', true, true),
@@ -93,7 +93,7 @@ ON CONFLICT (code, code_system) DO NOTHING;
 -- SAMPLE PATIENTS (500 synthetic patients)
 -- ============================================================================
 
-INSERT INTO dim_patient (mrn, effective_date, is_current, first_name, last_name, date_of_birth, age, age_group, gender, city, state, postal_code, country, language, marital_status, race, ethnicity, deceased, source_system, source_id)
+INSERT INTO dim.dim_patient (mrn, effective_date, is_current, first_name, last_name, date_of_birth, age, age_group, gender, city, state, postal_code, country, language, marital_status, race, ethnicity, deceased, source_system, source_id)
 SELECT
     'FAKE-' || LPAD(i::TEXT, 6, '0') as mrn,
     '2020-01-01'::DATE as effective_date,
@@ -127,16 +127,16 @@ ON CONFLICT DO NOTHING;
 -- SAMPLE ENCOUNTERS (2000 encounters over 12 months)
 -- ============================================================================
 
-INSERT INTO fact_encounter (patient_key, admission_date_key, discharge_date_key, location_key, attending_provider_key, primary_diagnosis_key,
+INSERT INTO dim.fact_encounter (patient_key, admission_date_key, discharge_date_key, location_key, attending_provider_key, primary_diagnosis_key,
     encounter_number, encounter_type, encounter_class, status, admit_source, discharge_disposition,
     admission_datetime, discharge_datetime, length_of_stay_hours, length_of_stay_days, is_readmission, is_ed_visit, source_system, source_id)
 SELECT
     p.patient_key,
     TO_CHAR(admit_date, 'YYYYMMDD')::INTEGER as admission_date_key,
     TO_CHAR(admit_date + (los_hours / 24.0 || ' hours')::INTERVAL, 'YYYYMMDD')::INTEGER as discharge_date_key,
-    (SELECT location_key FROM dim_location ORDER BY random() LIMIT 1) as location_key,
-    (SELECT provider_key FROM dim_provider ORDER BY random() LIMIT 1) as attending_provider_key,
-    (SELECT diagnosis_key FROM dim_diagnosis ORDER BY random() LIMIT 1) as primary_diagnosis_key,
+    (SELECT location_key FROM dim.dim_location ORDER BY random() LIMIT 1) as location_key,
+    (SELECT provider_key FROM dim.dim_provider ORDER BY random() LIMIT 1) as attending_provider_key,
+    (SELECT diagnosis_key FROM dim.dim_diagnosis ORDER BY random() LIMIT 1) as primary_diagnosis_key,
     'ENC-' || LPAD(i::TEXT, 8, '0') as encounter_number,
     (ARRAY['inpatient', 'outpatient', 'emergency', 'observation'])[1 + (random() * 3)::INTEGER] as encounter_type,
     CASE WHEN random() > 0.7 THEN 'inpatient' ELSE 'outpatient' END as encounter_class,
@@ -154,19 +154,19 @@ SELECT
 FROM (
     SELECT
         i,
-        (SELECT patient_key FROM dim_patient WHERE is_current ORDER BY random() LIMIT 1) as patient_key,
+        (SELECT patient_key FROM dim.dim_patient WHERE is_current ORDER BY random() LIMIT 1) as patient_key,
         CURRENT_DATE - ((random() * 365)::INTEGER || ' days')::INTERVAL as admit_date,
         (4 + random() * 200)::NUMERIC as los_hours
     FROM generate_series(1, 2000) as i
 ) as enc_data
-JOIN dim_patient p ON p.patient_key = enc_data.patient_key
+JOIN dim.dim_patient p ON p.patient_key = enc_data.patient_key
 ON CONFLICT DO NOTHING;
 
 -- ============================================================================
 -- SAMPLE CENSUS DATA (Last 90 days)
 -- ============================================================================
 
-INSERT INTO metric_patient_census (census_date, facility, department, unit, midnight_census, admissions, discharges, transfers_in, transfers_out, licensed_beds, operational_beds, occupancy_rate)
+INSERT INTO metrics.metric_patient_census (census_date, facility, department, unit, midnight_census, admissions, discharges, transfers_in, transfers_out, licensed_beds, operational_beds, occupancy_rate)
 SELECT
     d::DATE as census_date,
     'Sample General Hospital' as facility,
@@ -181,7 +181,7 @@ SELECT
     l.operational_beds,
     ROUND((0.6 + random() * 0.35) * 100, 1) as occupancy_rate
 FROM generate_series(CURRENT_DATE - INTERVAL '90 days', CURRENT_DATE, '1 day'::INTERVAL) as d
-CROSS JOIN dim_location l
+CROSS JOIN dim.dim_location l
 WHERE l.location_type IN ('Med-Surg', 'ICU', 'Step-Down')
 ON CONFLICT (census_date, location_key) DO NOTHING;
 
@@ -189,7 +189,7 @@ ON CONFLICT (census_date, location_key) DO NOTHING;
 -- SAMPLE ED THROUGHPUT (Last 30 days, hourly)
 -- ============================================================================
 
-INSERT INTO metric_ed_throughput (metric_date, metric_hour, facility, ed_location, arrivals, departures, patients_in_ed, patients_waiting, avg_door_to_provider, avg_length_of_stay, admitted, discharged, left_without_seen)
+INSERT INTO metrics.metric_ed_throughput (metric_date, metric_hour, facility, ed_location, arrivals, departures, patients_in_ed, patients_waiting, avg_door_to_provider, avg_length_of_stay, admitted, discharged, left_without_seen)
 SELECT
     d::DATE as metric_date,
     h as metric_hour,
@@ -218,7 +218,7 @@ ON CONFLICT (metric_date, metric_hour, facility) DO NOTHING;
 -- SAMPLE QUALITY INDICATORS (Monthly for last 12 months)
 -- ============================================================================
 
-INSERT INTO metric_quality_indicator (metric_date, metric_period, facility, indicator_code, indicator_name, indicator_category, numerator, denominator, rate, target_rate, meets_target)
+INSERT INTO metrics.metric_quality_indicator (metric_date, metric_period, facility, indicator_code, indicator_name, indicator_category, numerator, denominator, rate, target_rate, meets_target)
 SELECT
     (DATE_TRUNC('month', CURRENT_DATE) - (i || ' months')::INTERVAL)::DATE as metric_date,
     'monthly' as metric_period,
@@ -248,9 +248,9 @@ ON CONFLICT DO NOTHING;
 DO $$
 BEGIN
     RAISE NOTICE 'Sample data loaded successfully';
-    RAISE NOTICE 'Patients: %', (SELECT COUNT(*) FROM dim_patient);
-    RAISE NOTICE 'Encounters: %', (SELECT COUNT(*) FROM fact_encounter);
-    RAISE NOTICE 'Census Records: %', (SELECT COUNT(*) FROM metric_patient_census);
-    RAISE NOTICE 'ED Throughput Records: %', (SELECT COUNT(*) FROM metric_ed_throughput);
-    RAISE NOTICE 'Quality Indicators: %', (SELECT COUNT(*) FROM metric_quality_indicator);
+    RAISE NOTICE 'Patients: %', (SELECT COUNT(*) FROM dim.dim_patient);
+    RAISE NOTICE 'Encounters: %', (SELECT COUNT(*) FROM dim.fact_encounter);
+    RAISE NOTICE 'Census Records: %', (SELECT COUNT(*) FROM metrics.metric_patient_census);
+    RAISE NOTICE 'ED Throughput Records: %', (SELECT COUNT(*) FROM metrics.metric_ed_throughput);
+    RAISE NOTICE 'Quality Indicators: %', (SELECT COUNT(*) FROM metrics.metric_quality_indicator);
 END $$;

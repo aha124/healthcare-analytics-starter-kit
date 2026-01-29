@@ -31,7 +31,7 @@ class MetricPatientCensus(Base, TimestampMixin):
     department: Mapped[str | None] = mapped_column(String(200))
     unit: Mapped[str | None] = mapped_column(String(100))
     location_key: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("dim_location.location_key")
+        Integer, ForeignKey("dim.dim_location.location_key")
     )
 
     # Census counts
@@ -60,6 +60,7 @@ class MetricPatientCensus(Base, TimestampMixin):
         UniqueConstraint("census_date", "location_key", name="uq_census_date_location"),
         Index("ix_metric_census_date", "census_date"),
         Index("ix_metric_census_facility", "facility"),
+        {"schema": "metrics"},
     )
 
 
@@ -111,6 +112,7 @@ class MetricEdThroughput(Base, TimestampMixin):
         UniqueConstraint("metric_date", "metric_hour", "facility", name="uq_ed_date_hour_facility"),
         Index("ix_metric_ed_date", "metric_date"),
         Index("ix_metric_ed_facility", "facility"),
+        {"schema": "metrics"},
     )
 
 
@@ -154,6 +156,7 @@ class MetricReadmission(Base, TimestampMixin):
         Index("ix_metric_readmission_date", "discharge_date"),
         Index("ix_metric_readmission_facility", "facility"),
         Index("ix_metric_readmission_diagnosis", "discharge_diagnosis_category"),
+        {"schema": "metrics"},
     )
 
 
@@ -199,6 +202,7 @@ class MetricLengthOfStay(Base, TimestampMixin):
         Index("ix_metric_los_date", "metric_date"),
         Index("ix_metric_los_facility", "facility"),
         Index("ix_metric_los_drg", "drg_code"),
+        {"schema": "metrics"},
     )
 
 
@@ -241,6 +245,7 @@ class MetricQualityIndicator(Base, TimestampMixin):
         Index("ix_metric_quality_date", "metric_date"),
         Index("ix_metric_quality_indicator", "indicator_code"),
         Index("ix_metric_quality_facility", "facility"),
+        {"schema": "metrics"},
     )
 
 
@@ -279,6 +284,7 @@ class MetricOperationalKPI(Base, TimestampMixin):
         Index("ix_metric_kpi_date", "metric_date"),
         Index("ix_metric_kpi_code", "kpi_code"),
         Index("ix_metric_kpi_facility", "facility"),
+        {"schema": "metrics"},
     )
 
 

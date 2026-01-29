@@ -1,7 +1,7 @@
 -- ED Throughput Views for Grafana Dashboards
 
 -- Current ED Status
-CREATE OR REPLACE VIEW v_ed_current_status AS
+CREATE OR REPLACE VIEW metrics.v_ed_current_status AS
 SELECT
     facility,
     ed_location,
@@ -13,22 +13,22 @@ SELECT
     SUM(admitted) as admitted_today,
     SUM(discharged) as discharged_today,
     SUM(left_without_seen) as lwbs_today
-FROM metric_ed_throughput
+FROM metrics.metric_ed_throughput
 WHERE metric_date = CURRENT_DATE
 GROUP BY facility, ed_location;
 
 -- ED Volume by Hour (Today vs Average)
-CREATE OR REPLACE VIEW v_ed_hourly_pattern AS
+CREATE OR REPLACE VIEW metrics.v_ed_hourly_pattern AS
 WITH today_data AS (
     SELECT metric_hour, arrivals
-    FROM metric_ed_throughput
+    FROM metrics.metric_ed_throughput
     WHERE metric_date = CURRENT_DATE
 ),
 avg_data AS (
     SELECT
         metric_hour,
         ROUND(AVG(arrivals), 1) as avg_arrivals
-    FROM metric_ed_throughput
+    FROM metrics.metric_ed_throughput
     WHERE metric_date >= CURRENT_DATE - INTERVAL '30 days'
     GROUP BY metric_hour
 )
@@ -42,7 +42,7 @@ LEFT JOIN today_data t ON t.metric_hour = a.metric_hour
 ORDER BY a.metric_hour;
 
 -- ED Length of Stay Trend
-CREATE OR REPLACE VIEW v_ed_los_trend AS
+CREATE OR REPLACE VIEW metrics.v_ed_los_trend AS
 SELECT
     metric_date,
     facility,
@@ -50,13 +50,13 @@ SELECT
     ROUND(AVG(median_los) / 60, 1) as median_los_hours,
     ROUND(AVG(p90_los) / 60, 1) as p90_los_hours,
     SUM(arrivals) as total_arrivals
-FROM metric_ed_throughput
+FROM metrics.metric_ed_throughput
 WHERE metric_date >= CURRENT_DATE - INTERVAL '30 days'
 GROUP BY metric_date, facility
 ORDER BY metric_date;
 
 -- ED Disposition Summary
-CREATE OR REPLACE VIEW v_ed_disposition AS
+CREATE OR REPLACE VIEW metrics.v_ed_disposition AS
 SELECT
     metric_date,
     SUM(admitted) as admitted,
@@ -66,19 +66,19 @@ SELECT
     SUM(left_ama) as ama,
     SUM(arrivals) as total_arrivals,
     ROUND(SUM(admitted)::NUMERIC / NULLIF(SUM(arrivals), 0) * 100, 1) as admission_rate_pct
-FROM metric_ed_throughput
+FROM metrics.metric_ed_throughput
 WHERE metric_date >= CURRENT_DATE - INTERVAL '30 days'
 GROUP BY metric_date
 ORDER BY metric_date;
 
 -- ED Door-to-Provider Time by Hour
-CREATE OR REPLACE VIEW v_ed_wait_times AS
+CREATE OR REPLACE VIEW metrics.v_ed_wait_times AS
 SELECT
     metric_hour as hour,
     ROUND(AVG(avg_door_to_provider), 0) as avg_wait_minutes,
     ROUND(MIN(avg_door_to_provider), 0) as min_wait,
     ROUND(MAX(avg_door_to_provider), 0) as max_wait
-FROM metric_ed_throughput
+FROM metrics.metric_ed_throughput
 WHERE metric_date >= CURRENT_DATE - INTERVAL '7 days'
 GROUP BY metric_hour
 ORDER BY metric_hour;

@@ -5,12 +5,15 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Create staging schema
+CREATE SCHEMA IF NOT EXISTS staging;
+
 -- ============================================================================
 -- STAGING TABLES
 -- ============================================================================
 
 -- Staging: Patients
-CREATE TABLE IF NOT EXISTS staging_patient (
+CREATE TABLE IF NOT EXISTS staging.staging_patient (
     id SERIAL PRIMARY KEY,
     source_system VARCHAR(50) NOT NULL,
     source_id VARCHAR(100) NOT NULL,
@@ -56,13 +59,13 @@ CREATE TABLE IF NOT EXISTS staging_patient (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS ix_staging_patient_source ON staging_patient(source_system, source_id);
-CREATE INDEX IF NOT EXISTS ix_staging_patient_mrn ON staging_patient(mrn);
-CREATE INDEX IF NOT EXISTS ix_staging_patient_batch ON staging_patient(batch_id);
-CREATE INDEX IF NOT EXISTS ix_staging_patient_processed ON staging_patient(is_processed);
+CREATE INDEX IF NOT EXISTS ix_staging_patient_source ON staging.staging_patient(source_system, source_id);
+CREATE INDEX IF NOT EXISTS ix_staging_patient_mrn ON staging.staging_patient(mrn);
+CREATE INDEX IF NOT EXISTS ix_staging_patient_batch ON staging.staging_patient(batch_id);
+CREATE INDEX IF NOT EXISTS ix_staging_patient_processed ON staging.staging_patient(is_processed);
 
 -- Staging: Encounters
-CREATE TABLE IF NOT EXISTS staging_encounter (
+CREATE TABLE IF NOT EXISTS staging.staging_encounter (
     id SERIAL PRIMARY KEY,
     source_system VARCHAR(50) NOT NULL,
     source_id VARCHAR(100) NOT NULL,
@@ -98,13 +101,13 @@ CREATE TABLE IF NOT EXISTS staging_encounter (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS ix_staging_encounter_source ON staging_encounter(source_system, source_id);
-CREATE INDEX IF NOT EXISTS ix_staging_encounter_patient ON staging_encounter(patient_source_id);
-CREATE INDEX IF NOT EXISTS ix_staging_encounter_batch ON staging_encounter(batch_id);
-CREATE INDEX IF NOT EXISTS ix_staging_encounter_dates ON staging_encounter(admission_date, discharge_date);
+CREATE INDEX IF NOT EXISTS ix_staging_encounter_source ON staging.staging_encounter(source_system, source_id);
+CREATE INDEX IF NOT EXISTS ix_staging_encounter_patient ON staging.staging_encounter(patient_source_id);
+CREATE INDEX IF NOT EXISTS ix_staging_encounter_batch ON staging.staging_encounter(batch_id);
+CREATE INDEX IF NOT EXISTS ix_staging_encounter_dates ON staging.staging_encounter(admission_date, discharge_date);
 
 -- Staging: Diagnoses
-CREATE TABLE IF NOT EXISTS staging_diagnosis (
+CREATE TABLE IF NOT EXISTS staging.staging_diagnosis (
     id SERIAL PRIMARY KEY,
     source_system VARCHAR(50) NOT NULL,
     source_id VARCHAR(100) NOT NULL,
@@ -140,13 +143,13 @@ CREATE TABLE IF NOT EXISTS staging_diagnosis (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS ix_staging_diagnosis_source ON staging_diagnosis(source_system, source_id);
-CREATE INDEX IF NOT EXISTS ix_staging_diagnosis_code ON staging_diagnosis(code);
-CREATE INDEX IF NOT EXISTS ix_staging_diagnosis_encounter ON staging_diagnosis(encounter_source_id);
-CREATE INDEX IF NOT EXISTS ix_staging_diagnosis_batch ON staging_diagnosis(batch_id);
+CREATE INDEX IF NOT EXISTS ix_staging_diagnosis_source ON staging.staging_diagnosis(source_system, source_id);
+CREATE INDEX IF NOT EXISTS ix_staging_diagnosis_code ON staging.staging_diagnosis(code);
+CREATE INDEX IF NOT EXISTS ix_staging_diagnosis_encounter ON staging.staging_diagnosis(encounter_source_id);
+CREATE INDEX IF NOT EXISTS ix_staging_diagnosis_batch ON staging.staging_diagnosis(batch_id);
 
 -- Staging: Procedures
-CREATE TABLE IF NOT EXISTS staging_procedure (
+CREATE TABLE IF NOT EXISTS staging.staging_procedure (
     id SERIAL PRIMARY KEY,
     source_system VARCHAR(50) NOT NULL,
     source_id VARCHAR(100) NOT NULL,
@@ -181,13 +184,13 @@ CREATE TABLE IF NOT EXISTS staging_procedure (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS ix_staging_procedure_source ON staging_procedure(source_system, source_id);
-CREATE INDEX IF NOT EXISTS ix_staging_procedure_code ON staging_procedure(code);
-CREATE INDEX IF NOT EXISTS ix_staging_procedure_encounter ON staging_procedure(encounter_source_id);
-CREATE INDEX IF NOT EXISTS ix_staging_procedure_batch ON staging_procedure(batch_id);
+CREATE INDEX IF NOT EXISTS ix_staging_procedure_source ON staging.staging_procedure(source_system, source_id);
+CREATE INDEX IF NOT EXISTS ix_staging_procedure_code ON staging.staging_procedure(code);
+CREATE INDEX IF NOT EXISTS ix_staging_procedure_encounter ON staging.staging_procedure(encounter_source_id);
+CREATE INDEX IF NOT EXISTS ix_staging_procedure_batch ON staging.staging_procedure(batch_id);
 
 -- Staging: Lab Results
-CREATE TABLE IF NOT EXISTS staging_lab_result (
+CREATE TABLE IF NOT EXISTS staging.staging_lab_result (
     id SERIAL PRIMARY KEY,
     source_system VARCHAR(50) NOT NULL,
     source_id VARCHAR(100) NOT NULL,
@@ -230,14 +233,14 @@ CREATE TABLE IF NOT EXISTS staging_lab_result (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS ix_staging_lab_source ON staging_lab_result(source_system, source_id);
-CREATE INDEX IF NOT EXISTS ix_staging_lab_code ON staging_lab_result(code);
-CREATE INDEX IF NOT EXISTS ix_staging_lab_patient ON staging_lab_result(patient_source_id);
-CREATE INDEX IF NOT EXISTS ix_staging_lab_date ON staging_lab_result(effective_date);
-CREATE INDEX IF NOT EXISTS ix_staging_lab_batch ON staging_lab_result(batch_id);
+CREATE INDEX IF NOT EXISTS ix_staging_lab_source ON staging.staging_lab_result(source_system, source_id);
+CREATE INDEX IF NOT EXISTS ix_staging_lab_code ON staging.staging_lab_result(code);
+CREATE INDEX IF NOT EXISTS ix_staging_lab_patient ON staging.staging_lab_result(patient_source_id);
+CREATE INDEX IF NOT EXISTS ix_staging_lab_date ON staging.staging_lab_result(effective_date);
+CREATE INDEX IF NOT EXISTS ix_staging_lab_batch ON staging.staging_lab_result(batch_id);
 
 -- Staging: Vitals
-CREATE TABLE IF NOT EXISTS staging_vital (
+CREATE TABLE IF NOT EXISTS staging.staging_vital (
     id SERIAL PRIMARY KEY,
     source_system VARCHAR(50) NOT NULL,
     source_id VARCHAR(100) NOT NULL,
@@ -283,13 +286,13 @@ CREATE TABLE IF NOT EXISTS staging_vital (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS ix_staging_vital_source ON staging_vital(source_system, source_id);
-CREATE INDEX IF NOT EXISTS ix_staging_vital_patient ON staging_vital(patient_source_id);
-CREATE INDEX IF NOT EXISTS ix_staging_vital_date ON staging_vital(recorded_date);
-CREATE INDEX IF NOT EXISTS ix_staging_vital_batch ON staging_vital(batch_id);
+CREATE INDEX IF NOT EXISTS ix_staging_vital_source ON staging.staging_vital(source_system, source_id);
+CREATE INDEX IF NOT EXISTS ix_staging_vital_patient ON staging.staging_vital(patient_source_id);
+CREATE INDEX IF NOT EXISTS ix_staging_vital_date ON staging.staging_vital(recorded_date);
+CREATE INDEX IF NOT EXISTS ix_staging_vital_batch ON staging.staging_vital(batch_id);
 
 -- Staging: Medications
-CREATE TABLE IF NOT EXISTS staging_medication (
+CREATE TABLE IF NOT EXISTS staging.staging_medication (
     id SERIAL PRIMARY KEY,
     source_system VARCHAR(50) NOT NULL,
     source_id VARCHAR(100) NOT NULL,
@@ -337,13 +340,13 @@ CREATE TABLE IF NOT EXISTS staging_medication (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS ix_staging_medication_source ON staging_medication(source_system, source_id);
-CREATE INDEX IF NOT EXISTS ix_staging_medication_patient ON staging_medication(patient_source_id);
-CREATE INDEX IF NOT EXISTS ix_staging_medication_name ON staging_medication(medication_name);
-CREATE INDEX IF NOT EXISTS ix_staging_medication_batch ON staging_medication(batch_id);
+CREATE INDEX IF NOT EXISTS ix_staging_medication_source ON staging.staging_medication(source_system, source_id);
+CREATE INDEX IF NOT EXISTS ix_staging_medication_patient ON staging.staging_medication(patient_source_id);
+CREATE INDEX IF NOT EXISTS ix_staging_medication_name ON staging.staging_medication(medication_name);
+CREATE INDEX IF NOT EXISTS ix_staging_medication_batch ON staging.staging_medication(batch_id);
 
 -- ETL Watermark tracking
-CREATE TABLE IF NOT EXISTS etl_watermark (
+CREATE TABLE IF NOT EXISTS staging.etl_watermark (
     id SERIAL PRIMARY KEY,
     source_system VARCHAR(50) NOT NULL,
     entity_type VARCHAR(50) NOT NULL,
@@ -356,7 +359,7 @@ CREATE TABLE IF NOT EXISTS etl_watermark (
 );
 
 -- Function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
+CREATE OR REPLACE FUNCTION staging.update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = CURRENT_TIMESTAMP;
@@ -372,15 +375,15 @@ BEGIN
     FOR t IN
         SELECT table_name
         FROM information_schema.tables
-        WHERE table_schema = 'public'
+        WHERE table_schema = 'staging'
         AND table_name LIKE 'staging_%'
     LOOP
         EXECUTE format('
-            DROP TRIGGER IF EXISTS update_%I_updated_at ON %I;
+            DROP TRIGGER IF EXISTS update_%I_updated_at ON staging.%I;
             CREATE TRIGGER update_%I_updated_at
-            BEFORE UPDATE ON %I
+            BEFORE UPDATE ON staging.%I
             FOR EACH ROW
-            EXECUTE FUNCTION update_updated_at_column();
+            EXECUTE FUNCTION staging.update_updated_at_column();
         ', t, t, t, t);
     END LOOP;
 END $$;
