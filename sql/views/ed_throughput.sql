@@ -8,8 +8,8 @@ SELECT
     SUM(arrivals) as todays_arrivals,
     MAX(patients_in_ed) as current_patients,
     MAX(patients_waiting) as waiting_for_bed,
-    ROUND(AVG(avg_door_to_provider), 0) as avg_wait_minutes,
-    ROUND(AVG(avg_length_of_stay) / 60, 1) as avg_los_hours,
+    ROUND(AVG(avg_door_to_provider)::NUMERIC, 0) as avg_wait_minutes,
+    ROUND((AVG(avg_length_of_stay) / 60)::NUMERIC, 1) as avg_los_hours,
     SUM(admitted) as admitted_today,
     SUM(discharged) as discharged_today,
     SUM(left_without_seen) as lwbs_today
@@ -27,7 +27,7 @@ WITH today_data AS (
 avg_data AS (
     SELECT
         metric_hour,
-        ROUND(AVG(arrivals), 1) as avg_arrivals
+        ROUND(AVG(arrivals)::NUMERIC, 1) as avg_arrivals
     FROM metrics.metric_ed_throughput
     WHERE metric_date >= CURRENT_DATE - INTERVAL '30 days'
     GROUP BY metric_hour
@@ -46,9 +46,9 @@ CREATE OR REPLACE VIEW metrics.v_ed_los_trend AS
 SELECT
     metric_date,
     facility,
-    ROUND(AVG(avg_length_of_stay) / 60, 1) as avg_los_hours,
-    ROUND(AVG(median_los) / 60, 1) as median_los_hours,
-    ROUND(AVG(p90_los) / 60, 1) as p90_los_hours,
+    ROUND((AVG(avg_length_of_stay) / 60)::NUMERIC, 1) as avg_los_hours,
+    ROUND((AVG(median_los) / 60)::NUMERIC, 1) as median_los_hours,
+    ROUND((AVG(p90_los) / 60)::NUMERIC, 1) as p90_los_hours,
     SUM(arrivals) as total_arrivals
 FROM metrics.metric_ed_throughput
 WHERE metric_date >= CURRENT_DATE - INTERVAL '30 days'
@@ -75,9 +75,9 @@ ORDER BY metric_date;
 CREATE OR REPLACE VIEW metrics.v_ed_wait_times AS
 SELECT
     metric_hour as hour,
-    ROUND(AVG(avg_door_to_provider), 0) as avg_wait_minutes,
-    ROUND(MIN(avg_door_to_provider), 0) as min_wait,
-    ROUND(MAX(avg_door_to_provider), 0) as max_wait
+    ROUND(AVG(avg_door_to_provider)::NUMERIC, 0) as avg_wait_minutes,
+    ROUND(MIN(avg_door_to_provider)::NUMERIC, 0) as min_wait,
+    ROUND(MAX(avg_door_to_provider)::NUMERIC, 0) as max_wait
 FROM metrics.metric_ed_throughput
 WHERE metric_date >= CURRENT_DATE - INTERVAL '7 days'
 GROUP BY metric_hour

@@ -12,7 +12,8 @@
 
 INSERT INTO dim.dim_date (date_key, full_date, year, quarter, month, month_name,
     week_of_year, day_of_month, day_of_week, day_name, day_of_year,
-    fiscal_year, fiscal_quarter, fiscal_month, is_weekend, is_holiday)
+    fiscal_year, fiscal_quarter, fiscal_month, is_weekend, is_holiday,
+    is_current_day, is_current_week, is_current_month, is_current_year)
 SELECT
     TO_CHAR(d, 'YYYYMMDD')::INTEGER as date_key,
     d as full_date,
@@ -32,7 +33,11 @@ SELECT
     CASE WHEN EXTRACT(MONTH FROM d) >= 7 THEN EXTRACT(MONTH FROM d)::INTEGER - 6
          ELSE EXTRACT(MONTH FROM d)::INTEGER + 6 END as fiscal_month,
     EXTRACT(DOW FROM d) IN (0, 6) as is_weekend,
-    FALSE as is_holiday
+    FALSE as is_holiday,
+    d = CURRENT_DATE as is_current_day,
+    EXTRACT(WEEK FROM d) = EXTRACT(WEEK FROM CURRENT_DATE) AND EXTRACT(YEAR FROM d) = EXTRACT(YEAR FROM CURRENT_DATE) as is_current_week,
+    EXTRACT(MONTH FROM d) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM d) = EXTRACT(YEAR FROM CURRENT_DATE) as is_current_month,
+    EXTRACT(YEAR FROM d) = EXTRACT(YEAR FROM CURRENT_DATE) as is_current_year
 FROM generate_series('2020-01-01'::date, '2025-12-31'::date, '1 day'::interval) as d
 ON CONFLICT (date_key) DO NOTHING;
 
@@ -146,7 +151,7 @@ SELECT
     admit_date as admission_datetime,
     admit_date + (los_hours / 24.0 || ' hours')::INTERVAL as discharge_datetime,
     los_hours as length_of_stay_hours,
-    ROUND(los_hours / 24.0, 2) as length_of_stay_days,
+    ROUND((los_hours / 24.0)::NUMERIC, 2) as length_of_stay_days,
     CASE WHEN random() > 0.88 THEN true ELSE false END as is_readmission,
     CASE WHEN random() > 0.6 THEN true ELSE false END as is_ed_visit,
     'sample_data' as source_system,

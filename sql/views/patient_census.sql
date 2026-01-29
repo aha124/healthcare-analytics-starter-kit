@@ -36,10 +36,10 @@ CREATE OR REPLACE VIEW metrics.v_census_by_day_of_week AS
 SELECT
     EXTRACT(DOW FROM census_date) as day_of_week,
     TO_CHAR(census_date, 'Day') as day_name,
-    ROUND(AVG(midnight_census), 0) as avg_census,
+    ROUND(AVG(midnight_census)::NUMERIC, 0) as avg_census,
     MAX(midnight_census) as max_census,
     MIN(midnight_census) as min_census,
-    ROUND(AVG(occupancy_rate), 1) as avg_occupancy_pct
+    ROUND(AVG(occupancy_rate)::NUMERIC, 1) as avg_occupancy_pct
 FROM metrics.metric_patient_census
 WHERE census_date >= CURRENT_DATE - INTERVAL '90 days'
 GROUP BY EXTRACT(DOW FROM census_date), TO_CHAR(census_date, 'Day')

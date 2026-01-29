@@ -20,7 +20,7 @@ SELECT
     SUM(index_discharges) as total_discharges,
     SUM(readmissions_30_day) as total_readmissions,
     ROUND(SUM(readmissions_30_day)::NUMERIC / NULLIF(SUM(index_discharges), 0) * 100, 2) as readmission_rate_pct,
-    ROUND(AVG(cms_expected_rate) * 100, 2) as expected_rate_pct
+    ROUND((AVG(cms_expected_rate) * 100)::NUMERIC, 2) as expected_rate_pct
 FROM metrics.metric_readmission
 WHERE discharge_date >= CURRENT_DATE - INTERVAL '365 days'
 GROUP BY discharge_diagnosis_category

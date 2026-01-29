@@ -6,10 +6,10 @@ SELECT
     metric_date,
     service_line,
     SUM(discharge_count) as discharges,
-    ROUND(AVG(avg_los), 1) as avg_los_days,
-    ROUND(AVG(median_los), 1) as median_los_days,
-    ROUND(AVG(expected_los), 1) as expected_los_days,
-    ROUND(AVG(los_index), 2) as los_index
+    ROUND(AVG(avg_los)::NUMERIC, 1) as avg_los_days,
+    ROUND(AVG(median_los)::NUMERIC, 1) as median_los_days,
+    ROUND(AVG(expected_los)::NUMERIC, 1) as expected_los_days,
+    ROUND(AVG(los_index)::NUMERIC, 2) as los_index
 FROM metrics.metric_length_of_stay
 WHERE metric_date >= CURRENT_DATE - INTERVAL '90 days'
 GROUP BY metric_date, service_line
@@ -21,9 +21,9 @@ SELECT
     drg_code,
     drg_description,
     SUM(discharge_count) as total_discharges,
-    ROUND(AVG(avg_los), 1) as avg_los_days,
-    ROUND(AVG(expected_los), 1) as expected_los_days,
-    ROUND(AVG(los_index), 2) as los_index,
+    ROUND(AVG(avg_los)::NUMERIC, 1) as avg_los_days,
+    ROUND(AVG(expected_los)::NUMERIC, 1) as expected_los_days,
+    ROUND(AVG(los_index)::NUMERIC, 2) as los_index,
     CASE
         WHEN AVG(los_index) > 1.1 THEN 'Above Expected'
         WHEN AVG(los_index) < 0.9 THEN 'Below Expected'
@@ -54,12 +54,12 @@ ORDER BY metric_date;
 CREATE OR REPLACE VIEW metrics.v_los_distribution AS
 SELECT
     service_line,
-    ROUND(AVG(avg_los), 1) as mean_los,
-    ROUND(AVG(median_los), 1) as median_los,
-    ROUND(AVG(p25_los), 1) as p25_los,
-    ROUND(AVG(p75_los), 1) as p75_los,
-    ROUND(AVG(p90_los), 1) as p90_los,
-    ROUND(AVG(std_dev_los), 2) as std_dev
+    ROUND(AVG(avg_los)::NUMERIC, 1) as mean_los,
+    ROUND(AVG(median_los)::NUMERIC, 1) as median_los,
+    ROUND(AVG(p25_los)::NUMERIC, 1) as p25_los,
+    ROUND(AVG(p75_los)::NUMERIC, 1) as p75_los,
+    ROUND(AVG(p90_los)::NUMERIC, 1) as p90_los,
+    ROUND(AVG(std_dev_los)::NUMERIC, 2) as std_dev
 FROM metrics.metric_length_of_stay
 WHERE metric_date >= CURRENT_DATE - INTERVAL '30 days'
 GROUP BY service_line
