@@ -71,7 +71,7 @@ The Healthcare Analytics Starter Kit provides everything you need to stand up a 
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/healthcare-analytics-starter-kit.git
+git clone https://github.com/aha124/healthcare-analytics-starter-kit.git
 cd healthcare-analytics-starter-kit
 
 # Copy environment template
