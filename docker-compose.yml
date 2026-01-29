@@ -1,0 +1,94 @@
+version: "3.8"
+
+services:
+  # PostgreSQL Database for Healthcare Analytics
+  postgres:
+    image: postgres:16-alpine
+    container_name: hask-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-healthcare_analytics}
+      POSTGRES_USER: ${POSTGRES_USER:-hask_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_in_production}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/schema:/docker-entrypoint-initdb.d/schema:ro
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hask_user} -d ${POSTGRES_DB:-healthcare_analytics}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hask-network
+
+  # Grafana for Visualization
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: hask-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_USERS_DEFAULT_THEME: light
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000}
+      # Database connection for Grafana's internal DB (optional, uses SQLite by default)
+      # GF_DATABASE_TYPE: postgres
+      # GF_DATABASE_HOST: postgres:5432
+      # GF_DATABASE_NAME: grafana
+      # GF_DATABASE_USER: ${POSTGRES_USER:-hask_user}
+      # GF_DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-changeme_in_production}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hask-network
+
+  # Optional: pgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: hask-pgadmin
+    restart: unless-stopped
+    profiles:
+      - tools
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    depends_on:
+      - postgres
+    networks:
+      - hask-network
+
+volumes:
+  postgres_data:
+    driver: local
+  grafana_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  hask-network:
+    driver: bridge
+    name: healthcare-analytics-network

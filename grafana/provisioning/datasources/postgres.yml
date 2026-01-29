@@ -1,0 +1,23 @@
+# Healthcare Analytics Starter Kit
+# Grafana PostgreSQL Datasource Configuration
+
+apiVersion: 1
+
+datasources:
+  - name: Healthcare Analytics
+    type: postgres
+    access: proxy
+    url: ${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}
+    user: ${POSTGRES_USER:-hask_user}
+    database: ${POSTGRES_DB:-healthcare_analytics}
+    isDefault: true
+    editable: false
+    jsonData:
+      sslmode: disable
+      maxOpenConns: 10
+      maxIdleConns: 5
+      connMaxLifetime: 14400
+      postgresVersion: 1400  # PostgreSQL 14
+      timescaledb: false
+    secureJsonData:
+      password: ${POSTGRES_PASSWORD:-changeme_in_production}

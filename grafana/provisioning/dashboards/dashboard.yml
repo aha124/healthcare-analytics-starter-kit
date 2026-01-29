@@ -1,0 +1,17 @@
+# Healthcare Analytics Starter Kit
+# Grafana Dashboard Provisioning Configuration
+
+apiVersion: 1
+
+providers:
+  - name: 'Healthcare Analytics Dashboards'
+    orgId: 1
+    folder: 'Healthcare Analytics'
+    folderUid: 'healthcare-analytics'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false
