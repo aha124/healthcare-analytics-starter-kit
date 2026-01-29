@@ -15,12 +15,12 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 setup(
     name="healthcare-analytics-starter-kit",
     version="1.0.0",
-    author="Healthcare Analytics Team",
-    author_email="support@example.com",
+    author="Anthony Arbaiza",
+    author_email="anthony.arbaiza124@gmail.com",
     description="Production-ready healthcare analytics infrastructure using open-source tools",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/example/healthcare-analytics-starter-kit",
+    url="https://github.com/aha124/healthcare-analytics-starter-kit",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     classifiers=[
