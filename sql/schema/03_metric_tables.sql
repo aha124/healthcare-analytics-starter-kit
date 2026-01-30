@@ -2,19 +2,22 @@
 -- Pre-aggregated Metric Tables
 -- Optimized for dashboard queries and reporting
 
+-- Create metrics schema
+CREATE SCHEMA IF NOT EXISTS metrics;
+
 -- ============================================================================
 -- METRIC TABLES
 -- ============================================================================
 
 -- Metric: Patient Census
-CREATE TABLE IF NOT EXISTS metric_patient_census (
+CREATE TABLE IF NOT EXISTS metrics.metric_patient_census (
     id SERIAL PRIMARY KEY,
     census_date DATE NOT NULL,
 
     facility VARCHAR(200),
     department VARCHAR(200),
     unit VARCHAR(100),
-    location_key INTEGER REFERENCES dim_location(location_key),
+    location_key INTEGER REFERENCES dim.dim_location(location_key),
 
     -- Census counts
     midnight_census INTEGER,
@@ -42,11 +45,11 @@ CREATE TABLE IF NOT EXISTS metric_patient_census (
     UNIQUE(census_date, location_key)
 );
 
-CREATE INDEX IF NOT EXISTS ix_metric_census_date ON metric_patient_census(census_date);
-CREATE INDEX IF NOT EXISTS ix_metric_census_facility ON metric_patient_census(facility);
+CREATE INDEX IF NOT EXISTS ix_metric_census_date ON metrics.metric_patient_census(census_date);
+CREATE INDEX IF NOT EXISTS ix_metric_census_facility ON metrics.metric_patient_census(facility);
 
 -- Metric: ED Throughput
-CREATE TABLE IF NOT EXISTS metric_ed_throughput (
+CREATE TABLE IF NOT EXISTS metrics.metric_ed_throughput (
     id SERIAL PRIMARY KEY,
     metric_date DATE NOT NULL,
     metric_hour INTEGER NOT NULL,  -- 0-23
@@ -88,11 +91,11 @@ CREATE TABLE IF NOT EXISTS metric_ed_throughput (
     UNIQUE(metric_date, metric_hour, facility)
 );
 
-CREATE INDEX IF NOT EXISTS ix_metric_ed_date ON metric_ed_throughput(metric_date);
-CREATE INDEX IF NOT EXISTS ix_metric_ed_facility ON metric_ed_throughput(facility);
+CREATE INDEX IF NOT EXISTS ix_metric_ed_date ON metrics.metric_ed_throughput(metric_date);
+CREATE INDEX IF NOT EXISTS ix_metric_ed_facility ON metrics.metric_ed_throughput(facility);
 
 -- Metric: Readmissions
-CREATE TABLE IF NOT EXISTS metric_readmission (
+CREATE TABLE IF NOT EXISTS metrics.metric_readmission (
     id SERIAL PRIMARY KEY,
     discharge_date DATE NOT NULL,
 
@@ -127,12 +130,12 @@ CREATE TABLE IF NOT EXISTS metric_readmission (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS ix_metric_readmission_date ON metric_readmission(discharge_date);
-CREATE INDEX IF NOT EXISTS ix_metric_readmission_facility ON metric_readmission(facility);
-CREATE INDEX IF NOT EXISTS ix_metric_readmission_diagnosis ON metric_readmission(discharge_diagnosis_category);
+CREATE INDEX IF NOT EXISTS ix_metric_readmission_date ON metrics.metric_readmission(discharge_date);
+CREATE INDEX IF NOT EXISTS ix_metric_readmission_facility ON metrics.metric_readmission(facility);
+CREATE INDEX IF NOT EXISTS ix_metric_readmission_diagnosis ON metrics.metric_readmission(discharge_diagnosis_category);
 
 -- Metric: Length of Stay
-CREATE TABLE IF NOT EXISTS metric_length_of_stay (
+CREATE TABLE IF NOT EXISTS metrics.metric_length_of_stay (
     id SERIAL PRIMARY KEY,
     metric_date DATE NOT NULL,
 
@@ -169,12 +172,12 @@ CREATE TABLE IF NOT EXISTS metric_length_of_stay (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS ix_metric_los_date ON metric_length_of_stay(metric_date);
-CREATE INDEX IF NOT EXISTS ix_metric_los_facility ON metric_length_of_stay(facility);
-CREATE INDEX IF NOT EXISTS ix_metric_los_drg ON metric_length_of_stay(drg_code);
+CREATE INDEX IF NOT EXISTS ix_metric_los_date ON metrics.metric_length_of_stay(metric_date);
+CREATE INDEX IF NOT EXISTS ix_metric_los_facility ON metrics.metric_length_of_stay(facility);
+CREATE INDEX IF NOT EXISTS ix_metric_los_drg ON metrics.metric_length_of_stay(drg_code);
 
 -- Metric: Quality Indicators
-CREATE TABLE IF NOT EXISTS metric_quality_indicator (
+CREATE TABLE IF NOT EXISTS metrics.metric_quality_indicator (
     id SERIAL PRIMARY KEY,
     metric_date DATE NOT NULL,
     metric_period VARCHAR(20) NOT NULL,  -- daily, weekly, monthly
@@ -207,12 +210,12 @@ CREATE TABLE IF NOT EXISTS metric_quality_indicator (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS ix_metric_quality_date ON metric_quality_indicator(metric_date);
-CREATE INDEX IF NOT EXISTS ix_metric_quality_indicator ON metric_quality_indicator(indicator_code);
-CREATE INDEX IF NOT EXISTS ix_metric_quality_facility ON metric_quality_indicator(facility);
+CREATE INDEX IF NOT EXISTS ix_metric_quality_date ON metrics.metric_quality_indicator(metric_date);
+CREATE INDEX IF NOT EXISTS ix_metric_quality_indicator ON metrics.metric_quality_indicator(indicator_code);
+CREATE INDEX IF NOT EXISTS ix_metric_quality_facility ON metrics.metric_quality_indicator(facility);
 
 -- Metric: Operational KPIs
-CREATE TABLE IF NOT EXISTS metric_operational_kpi (
+CREATE TABLE IF NOT EXISTS metrics.metric_operational_kpi (
     id SERIAL PRIMARY KEY,
     metric_date DATE NOT NULL,
 
@@ -238,16 +241,16 @@ CREATE TABLE IF NOT EXISTS metric_operational_kpi (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS ix_metric_kpi_date ON metric_operational_kpi(metric_date);
-CREATE INDEX IF NOT EXISTS ix_metric_kpi_code ON metric_operational_kpi(kpi_code);
-CREATE INDEX IF NOT EXISTS ix_metric_kpi_facility ON metric_operational_kpi(facility);
+CREATE INDEX IF NOT EXISTS ix_metric_kpi_date ON metrics.metric_operational_kpi(metric_date);
+CREATE INDEX IF NOT EXISTS ix_metric_kpi_code ON metrics.metric_operational_kpi(kpi_code);
+CREATE INDEX IF NOT EXISTS ix_metric_kpi_facility ON metrics.metric_operational_kpi(facility);
 
 -- ============================================================================
 -- VIEWS FOR DASHBOARDS
 -- ============================================================================
 
 -- View: Current Census Summary
-CREATE OR REPLACE VIEW v_current_census AS
+CREATE OR REPLACE VIEW metrics.v_current_census AS
 SELECT
     facility,
     department,
@@ -257,25 +260,25 @@ SELECT
     ROUND(AVG(occupancy_rate), 1) as avg_occupancy_pct,
     SUM(admissions) as todays_admissions,
     SUM(discharges) as todays_discharges
-FROM metric_patient_census
+FROM metrics.metric_patient_census
 WHERE census_date = CURRENT_DATE
 GROUP BY facility, department;
 
 -- View: 30-Day Readmission Summary
-CREATE OR REPLACE VIEW v_readmission_summary AS
+CREATE OR REPLACE VIEW metrics.v_readmission_summary AS
 SELECT
     facility,
     discharge_diagnosis_category,
     SUM(index_discharges) as total_discharges,
     SUM(readmissions_30_day) as total_readmissions,
     ROUND(AVG(readmission_rate_30_day) * 100, 1) as avg_readmission_rate_pct
-FROM metric_readmission
+FROM metrics.metric_readmission
 WHERE discharge_date >= CURRENT_DATE - INTERVAL '90 days'
 GROUP BY facility, discharge_diagnosis_category
 ORDER BY avg_readmission_rate_pct DESC;
 
 -- View: ED Performance Today
-CREATE OR REPLACE VIEW v_ed_performance_today AS
+CREATE OR REPLACE VIEW metrics.v_ed_performance_today AS
 SELECT
     facility,
     SUM(arrivals) as total_arrivals,
@@ -283,12 +286,12 @@ SELECT
     ROUND(AVG(avg_door_to_provider), 0) as avg_wait_minutes,
     ROUND(AVG(avg_length_of_stay) / 60, 1) as avg_los_hours,
     SUM(left_without_seen) as lwbs_count
-FROM metric_ed_throughput
+FROM metrics.metric_ed_throughput
 WHERE metric_date = CURRENT_DATE
 GROUP BY facility;
 
 -- View: Quality Dashboard
-CREATE OR REPLACE VIEW v_quality_dashboard AS
+CREATE OR REPLACE VIEW metrics.v_quality_dashboard AS
 SELECT
     indicator_category,
     indicator_code,
@@ -298,7 +301,7 @@ SELECT
     ROUND(AVG(rate) * 1000, 2) as rate_per_1000,
     ROUND(AVG(target_rate) * 1000, 2) as target_per_1000,
     SUM(CASE WHEN meets_target THEN 1 ELSE 0 END) as periods_meeting_target
-FROM metric_quality_indicator
+FROM metrics.metric_quality_indicator
 WHERE metric_date >= CURRENT_DATE - INTERVAL '30 days'
 GROUP BY indicator_category, indicator_code, indicator_name
 ORDER BY indicator_category, indicator_code;

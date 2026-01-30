@@ -62,6 +62,7 @@ class DimDate(Base):
     __table_args__ = (
         Index("ix_dim_date_year_month", "year", "month"),
         Index("ix_dim_date_fiscal", "fiscal_year", "fiscal_quarter"),
+        {"schema": "dim"},
     )
 
 
@@ -111,6 +112,7 @@ class DimPatient(Base, AuditMixin):
         Index("ix_dim_patient_mrn_current", "mrn", "is_current"),
         Index("ix_dim_patient_demographics", "gender", "age_group"),
         Index("ix_dim_patient_geography", "state", "city"),
+        {"schema": "dim"},
     )
 
 
@@ -142,6 +144,7 @@ class DimProvider(Base, AuditMixin):
     __table_args__ = (
         Index("ix_dim_provider_npi", "npi"),
         Index("ix_dim_provider_specialty", "specialty"),
+        {"schema": "dim"},
     )
 
 
@@ -178,6 +181,7 @@ class DimLocation(Base, AuditMixin):
     __table_args__ = (
         Index("ix_dim_location_facility", "facility_name"),
         Index("ix_dim_location_type", "location_type"),
+        {"schema": "dim"},
     )
 
 
@@ -213,6 +217,7 @@ class DimDiagnosis(Base, AuditMixin):
         UniqueConstraint("code", "code_system", name="uq_diagnosis_code_system"),
         Index("ix_dim_diagnosis_code", "code"),
         Index("ix_dim_diagnosis_chapter", "chapter"),
+        {"schema": "dim"},
     )
 
 
@@ -242,6 +247,7 @@ class DimProcedure(Base, AuditMixin):
     __table_args__ = (
         UniqueConstraint("code", "code_system", name="uq_procedure_code_system"),
         Index("ix_dim_procedure_code", "code"),
+        {"schema": "dim"},
     )
 
 
@@ -280,6 +286,7 @@ class DimMedication(Base, AuditMixin):
         Index("ix_dim_medication_rxnorm", "rxnorm_code"),
         Index("ix_dim_medication_generic", "generic_name"),
         Index("ix_dim_medication_class", "drug_class"),
+        {"schema": "dim"},
     )
 
 
@@ -297,22 +304,22 @@ class FactEncounter(Base, AuditMixin):
 
     # Dimension keys
     patient_key: Mapped[int] = mapped_column(
-        Integer, ForeignKey("dim_patient.patient_key"), nullable=False
+        Integer, ForeignKey("dim.dim_patient.patient_key"), nullable=False
     )
     admission_date_key: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("dim_date.date_key")
+        Integer, ForeignKey("dim.dim_date.date_key")
     )
     discharge_date_key: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("dim_date.date_key")
+        Integer, ForeignKey("dim.dim_date.date_key")
     )
     location_key: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("dim_location.location_key")
+        Integer, ForeignKey("dim.dim_location.location_key")
     )
     attending_provider_key: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("dim_provider.provider_key")
+        Integer, ForeignKey("dim.dim_provider.provider_key")
     )
     primary_diagnosis_key: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("dim_diagnosis.diagnosis_key")
+        Integer, ForeignKey("dim.dim_diagnosis.diagnosis_key")
     )
 
     # Degenerate dimensions
@@ -354,6 +361,7 @@ class FactEncounter(Base, AuditMixin):
         Index("ix_fact_encounter_admission_date", "admission_date_key"),
         Index("ix_fact_encounter_type", "encounter_type"),
         Index("ix_fact_encounter_location", "location_key"),
+        {"schema": "dim"},
     )
 
 
@@ -366,16 +374,16 @@ class FactDiagnosis(Base, AuditMixin):
 
     # Dimension keys
     encounter_key: Mapped[int] = mapped_column(
-        Integer, ForeignKey("fact_encounter.encounter_key"), nullable=False
+        Integer, ForeignKey("dim.fact_encounter.encounter_key"), nullable=False
     )
     patient_key: Mapped[int] = mapped_column(
-        Integer, ForeignKey("dim_patient.patient_key"), nullable=False
+        Integer, ForeignKey("dim.dim_patient.patient_key"), nullable=False
     )
     diagnosis_key: Mapped[int] = mapped_column(
-        Integer, ForeignKey("dim_diagnosis.diagnosis_key"), nullable=False
+        Integer, ForeignKey("dim.dim_diagnosis.diagnosis_key"), nullable=False
     )
     diagnosis_date_key: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("dim_date.date_key")
+        Integer, ForeignKey("dim.dim_date.date_key")
     )
 
     # Attributes
@@ -392,6 +400,7 @@ class FactDiagnosis(Base, AuditMixin):
         Index("ix_fact_diagnosis_encounter", "encounter_key"),
         Index("ix_fact_diagnosis_diagnosis", "diagnosis_key"),
         Index("ix_fact_diagnosis_patient", "patient_key"),
+        {"schema": "dim"},
     )
 
 
@@ -404,22 +413,22 @@ class FactProcedure(Base, AuditMixin):
 
     # Dimension keys
     encounter_key: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("fact_encounter.encounter_key")
+        Integer, ForeignKey("dim.fact_encounter.encounter_key")
     )
     patient_key: Mapped[int] = mapped_column(
-        Integer, ForeignKey("dim_patient.patient_key"), nullable=False
+        Integer, ForeignKey("dim.dim_patient.patient_key"), nullable=False
     )
     procedure_key: Mapped[int] = mapped_column(
-        Integer, ForeignKey("dim_procedure.procedure_key"), nullable=False
+        Integer, ForeignKey("dim.dim_procedure.procedure_key"), nullable=False
     )
     procedure_date_key: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("dim_date.date_key")
+        Integer, ForeignKey("dim.dim_date.date_key")
     )
     location_key: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("dim_location.location_key")
+        Integer, ForeignKey("dim.dim_location.location_key")
     )
     provider_key: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("dim_provider.provider_key")
+        Integer, ForeignKey("dim.dim_provider.provider_key")
     )
 
     # Timestamps
@@ -440,6 +449,7 @@ class FactProcedure(Base, AuditMixin):
         Index("ix_fact_procedure_encounter", "encounter_key"),
         Index("ix_fact_procedure_patient", "patient_key"),
         Index("ix_fact_procedure_date", "procedure_date_key"),
+        {"schema": "dim"},
     )
 
 
@@ -452,13 +462,13 @@ class FactLabResult(Base, AuditMixin):
 
     # Dimension keys
     encounter_key: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("fact_encounter.encounter_key")
+        Integer, ForeignKey("dim.fact_encounter.encounter_key")
     )
     patient_key: Mapped[int] = mapped_column(
-        Integer, ForeignKey("dim_patient.patient_key"), nullable=False
+        Integer, ForeignKey("dim.dim_patient.patient_key"), nullable=False
     )
     result_date_key: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("dim_date.date_key")
+        Integer, ForeignKey("dim.dim_date.date_key")
     )
 
     # Lab test info (could be a dimension for larger datasets)
@@ -488,6 +498,7 @@ class FactLabResult(Base, AuditMixin):
         Index("ix_fact_lab_encounter", "encounter_key"),
         Index("ix_fact_lab_test", "test_code"),
         Index("ix_fact_lab_date", "result_date_key"),
+        {"schema": "dim"},
     )
 
 
@@ -500,16 +511,16 @@ class FactVital(Base, AuditMixin):
 
     # Dimension keys
     encounter_key: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("fact_encounter.encounter_key")
+        Integer, ForeignKey("dim.fact_encounter.encounter_key")
     )
     patient_key: Mapped[int] = mapped_column(
-        Integer, ForeignKey("dim_patient.patient_key"), nullable=False
+        Integer, ForeignKey("dim.dim_patient.patient_key"), nullable=False
     )
     recorded_date_key: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("dim_date.date_key")
+        Integer, ForeignKey("dim.dim_date.date_key")
     )
     location_key: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("dim_location.location_key")
+        Integer, ForeignKey("dim.dim_location.location_key")
     )
 
     # Timestamp
@@ -536,6 +547,7 @@ class FactVital(Base, AuditMixin):
         Index("ix_fact_vital_patient", "patient_key"),
         Index("ix_fact_vital_encounter", "encounter_key"),
         Index("ix_fact_vital_date", "recorded_date_key"),
+        {"schema": "dim"},
     )
 
 
@@ -548,19 +560,19 @@ class FactMedication(Base, AuditMixin):
 
     # Dimension keys
     encounter_key: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("fact_encounter.encounter_key")
+        Integer, ForeignKey("dim.fact_encounter.encounter_key")
     )
     patient_key: Mapped[int] = mapped_column(
-        Integer, ForeignKey("dim_patient.patient_key"), nullable=False
+        Integer, ForeignKey("dim.dim_patient.patient_key"), nullable=False
     )
     medication_key: Mapped[int] = mapped_column(
-        Integer, ForeignKey("dim_medication.medication_key"), nullable=False
+        Integer, ForeignKey("dim.dim_medication.medication_key"), nullable=False
     )
     order_date_key: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("dim_date.date_key")
+        Integer, ForeignKey("dim.dim_date.date_key")
     )
     provider_key: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("dim_provider.provider_key")
+        Integer, ForeignKey("dim.dim_provider.provider_key")
     )
 
     # Timestamps
@@ -591,4 +603,5 @@ class FactMedication(Base, AuditMixin):
         Index("ix_fact_medication_encounter", "encounter_key"),
         Index("ix_fact_medication_medication", "medication_key"),
         Index("ix_fact_medication_date", "order_date_key"),
+        {"schema": "dim"},
     )

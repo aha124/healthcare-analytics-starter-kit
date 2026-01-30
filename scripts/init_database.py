@@ -48,31 +48,40 @@ def init_database(drop_existing: bool = False):
         Base.metadata.create_all(engine)
 
         # Execute additional SQL scripts
+        # Using raw connection to handle complex SQL with functions and DO blocks
         sql_dir = Path(__file__).parent.parent / "sql" / "schema"
         if sql_dir.exists():
             for sql_file in sorted(sql_dir.glob("*.sql")):
                 logger.info(f"Executing {sql_file.name}")
                 sql_content = sql_file.read_text()
-                for statement in sql_content.split(";"):
-                    statement = statement.strip()
-                    if statement:
-                        try:
-                            conn.execute(text(statement))
-                        except Exception as e:
-                            logger.warning(f"Statement failed: {e}")
-                conn.commit()
+
+                # Use raw DBAPI connection to execute full script at once
+                # This handles functions, triggers, and DO blocks correctly
+                raw_conn = conn.connection.dbapi_connection
+                with raw_conn.cursor() as cursor:
+                    try:
+                        cursor.execute(sql_content)
+                        raw_conn.commit()
+                        logger.info(f"Successfully executed {sql_file.name}")
+                    except Exception as e:
+                        raw_conn.rollback()
+                        logger.warning(f"Error executing {sql_file.name}: {e}")
 
         # Execute view creation
         views_dir = Path(__file__).parent.parent / "sql" / "views"
         if views_dir.exists():
+            raw_conn = conn.connection.dbapi_connection
             for sql_file in sorted(views_dir.glob("*.sql")):
                 logger.info(f"Creating view from {sql_file.name}")
                 sql_content = sql_file.read_text()
-                try:
-                    conn.execute(text(sql_content))
-                    conn.commit()
-                except Exception as e:
-                    logger.warning(f"View creation failed: {e}")
+                with raw_conn.cursor() as cursor:
+                    try:
+                        cursor.execute(sql_content)
+                        raw_conn.commit()
+                        logger.info(f"Successfully created views from {sql_file.name}")
+                    except Exception as e:
+                        raw_conn.rollback()
+                        logger.warning(f"View creation failed for {sql_file.name}: {e}")
 
     logger.info("Database initialization completed")
 

@@ -2,12 +2,15 @@
 -- Dimensional (Star Schema) Tables
 -- Optimized for analytics queries and dashboard performance
 
+-- Create dim schema for dimensional model
+CREATE SCHEMA IF NOT EXISTS dim;
+
 -- ============================================================================
 -- DIMENSION TABLES
 -- ============================================================================
 
 -- Dimension: Date
-CREATE TABLE IF NOT EXISTS dim_date (
+CREATE TABLE IF NOT EXISTS dim.dim_date (
     date_key INTEGER PRIMARY KEY,  -- YYYYMMDD format
     full_date DATE UNIQUE NOT NULL,
 
@@ -39,11 +42,11 @@ CREATE TABLE IF NOT EXISTS dim_date (
     is_current_year BOOLEAN DEFAULT FALSE
 );
 
-CREATE INDEX IF NOT EXISTS ix_dim_date_year_month ON dim_date(year, month);
-CREATE INDEX IF NOT EXISTS ix_dim_date_fiscal ON dim_date(fiscal_year, fiscal_quarter);
+CREATE INDEX IF NOT EXISTS ix_dim_date_year_month ON dim.dim_date(year, month);
+CREATE INDEX IF NOT EXISTS ix_dim_date_fiscal ON dim.dim_date(fiscal_year, fiscal_quarter);
 
 -- Dimension: Patient
-CREATE TABLE IF NOT EXISTS dim_patient (
+CREATE TABLE IF NOT EXISTS dim.dim_patient (
     patient_key SERIAL PRIMARY KEY,
     mrn VARCHAR(50) NOT NULL,
 
@@ -84,13 +87,13 @@ CREATE TABLE IF NOT EXISTS dim_patient (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS ix_dim_patient_mrn_current ON dim_patient(mrn, is_current);
-CREATE INDEX IF NOT EXISTS ix_dim_patient_demographics ON dim_patient(gender, age_group);
-CREATE INDEX IF NOT EXISTS ix_dim_patient_geography ON dim_patient(state, city);
-CREATE UNIQUE INDEX IF NOT EXISTS ix_dim_patient_mrn_effective ON dim_patient(mrn, effective_date);
+CREATE INDEX IF NOT EXISTS ix_dim_patient_mrn_current ON dim.dim_patient(mrn, is_current);
+CREATE INDEX IF NOT EXISTS ix_dim_patient_demographics ON dim.dim_patient(gender, age_group);
+CREATE INDEX IF NOT EXISTS ix_dim_patient_geography ON dim.dim_patient(state, city);
+CREATE UNIQUE INDEX IF NOT EXISTS ix_dim_patient_mrn_effective ON dim.dim_patient(mrn, effective_date);
 
 -- Dimension: Provider
-CREATE TABLE IF NOT EXISTS dim_provider (
+CREATE TABLE IF NOT EXISTS dim.dim_provider (
     provider_key SERIAL PRIMARY KEY,
     provider_id VARCHAR(50) UNIQUE NOT NULL,
     npi VARCHAR(20),
@@ -111,11 +114,11 @@ CREATE TABLE IF NOT EXISTS dim_provider (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS ix_dim_provider_npi ON dim_provider(npi);
-CREATE INDEX IF NOT EXISTS ix_dim_provider_specialty ON dim_provider(specialty);
+CREATE INDEX IF NOT EXISTS ix_dim_provider_npi ON dim.dim_provider(npi);
+CREATE INDEX IF NOT EXISTS ix_dim_provider_specialty ON dim.dim_provider(specialty);
 
 -- Dimension: Location
-CREATE TABLE IF NOT EXISTS dim_location (
+CREATE TABLE IF NOT EXISTS dim.dim_location (
     location_key SERIAL PRIMARY KEY,
     location_id VARCHAR(50) UNIQUE NOT NULL,
 
@@ -140,11 +143,11 @@ CREATE TABLE IF NOT EXISTS dim_location (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS ix_dim_location_facility ON dim_location(facility_name);
-CREATE INDEX IF NOT EXISTS ix_dim_location_type ON dim_location(location_type);
+CREATE INDEX IF NOT EXISTS ix_dim_location_facility ON dim.dim_location(facility_name);
+CREATE INDEX IF NOT EXISTS ix_dim_location_type ON dim.dim_location(location_type);
 
 -- Dimension: Diagnosis
-CREATE TABLE IF NOT EXISTS dim_diagnosis (
+CREATE TABLE IF NOT EXISTS dim.dim_diagnosis (
     diagnosis_key SERIAL PRIMARY KEY,
     code VARCHAR(20) NOT NULL,
     code_system VARCHAR(50) NOT NULL,
@@ -166,11 +169,11 @@ CREATE TABLE IF NOT EXISTS dim_diagnosis (
     UNIQUE(code, code_system)
 );
 
-CREATE INDEX IF NOT EXISTS ix_dim_diagnosis_code ON dim_diagnosis(code);
-CREATE INDEX IF NOT EXISTS ix_dim_diagnosis_chapter ON dim_diagnosis(chapter);
+CREATE INDEX IF NOT EXISTS ix_dim_diagnosis_code ON dim.dim_diagnosis(code);
+CREATE INDEX IF NOT EXISTS ix_dim_diagnosis_chapter ON dim.dim_diagnosis(chapter);
 
 -- Dimension: Procedure
-CREATE TABLE IF NOT EXISTS dim_procedure (
+CREATE TABLE IF NOT EXISTS dim.dim_procedure (
     procedure_key SERIAL PRIMARY KEY,
     code VARCHAR(20) NOT NULL,
     code_system VARCHAR(50) NOT NULL,
@@ -188,10 +191,10 @@ CREATE TABLE IF NOT EXISTS dim_procedure (
     UNIQUE(code, code_system)
 );
 
-CREATE INDEX IF NOT EXISTS ix_dim_procedure_code ON dim_procedure(code);
+CREATE INDEX IF NOT EXISTS ix_dim_procedure_code ON dim.dim_procedure(code);
 
 -- Dimension: Medication
-CREATE TABLE IF NOT EXISTS dim_medication (
+CREATE TABLE IF NOT EXISTS dim.dim_medication (
     medication_key SERIAL PRIMARY KEY,
     rxnorm_code VARCHAR(20),
     ndc_code VARCHAR(20),
@@ -215,25 +218,25 @@ CREATE TABLE IF NOT EXISTS dim_medication (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS ix_dim_medication_rxnorm ON dim_medication(rxnorm_code);
-CREATE INDEX IF NOT EXISTS ix_dim_medication_generic ON dim_medication(generic_name);
-CREATE INDEX IF NOT EXISTS ix_dim_medication_class ON dim_medication(drug_class);
+CREATE INDEX IF NOT EXISTS ix_dim_medication_rxnorm ON dim.dim_medication(rxnorm_code);
+CREATE INDEX IF NOT EXISTS ix_dim_medication_generic ON dim.dim_medication(generic_name);
+CREATE INDEX IF NOT EXISTS ix_dim_medication_class ON dim.dim_medication(drug_class);
 
 -- ============================================================================
 -- FACT TABLES
 -- ============================================================================
 
 -- Fact: Encounters
-CREATE TABLE IF NOT EXISTS fact_encounter (
+CREATE TABLE IF NOT EXISTS dim.fact_encounter (
     encounter_key SERIAL PRIMARY KEY,
 
     -- Dimension keys
-    patient_key INTEGER NOT NULL REFERENCES dim_patient(patient_key),
-    admission_date_key INTEGER REFERENCES dim_date(date_key),
-    discharge_date_key INTEGER REFERENCES dim_date(date_key),
-    location_key INTEGER REFERENCES dim_location(location_key),
-    attending_provider_key INTEGER REFERENCES dim_provider(provider_key),
-    primary_diagnosis_key INTEGER REFERENCES dim_diagnosis(diagnosis_key),
+    patient_key INTEGER NOT NULL REFERENCES dim.dim_patient(patient_key),
+    admission_date_key INTEGER REFERENCES dim.dim_date(date_key),
+    discharge_date_key INTEGER REFERENCES dim.dim_date(date_key),
+    location_key INTEGER REFERENCES dim.dim_location(location_key),
+    attending_provider_key INTEGER REFERENCES dim.dim_provider(provider_key),
+    primary_diagnosis_key INTEGER REFERENCES dim.dim_diagnosis(diagnosis_key),
 
     -- Degenerate dimensions
     encounter_number VARCHAR(50),
@@ -270,19 +273,19 @@ CREATE TABLE IF NOT EXISTS fact_encounter (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS ix_fact_encounter_patient ON fact_encounter(patient_key);
-CREATE INDEX IF NOT EXISTS ix_fact_encounter_admission_date ON fact_encounter(admission_date_key);
-CREATE INDEX IF NOT EXISTS ix_fact_encounter_type ON fact_encounter(encounter_type);
-CREATE INDEX IF NOT EXISTS ix_fact_encounter_location ON fact_encounter(location_key);
+CREATE INDEX IF NOT EXISTS ix_fact_encounter_patient ON dim.fact_encounter(patient_key);
+CREATE INDEX IF NOT EXISTS ix_fact_encounter_admission_date ON dim.fact_encounter(admission_date_key);
+CREATE INDEX IF NOT EXISTS ix_fact_encounter_type ON dim.fact_encounter(encounter_type);
+CREATE INDEX IF NOT EXISTS ix_fact_encounter_location ON dim.fact_encounter(location_key);
 
 -- Fact: Diagnoses (Bridge table)
-CREATE TABLE IF NOT EXISTS fact_diagnosis (
+CREATE TABLE IF NOT EXISTS dim.fact_diagnosis (
     fact_diagnosis_key SERIAL PRIMARY KEY,
 
-    encounter_key INTEGER NOT NULL REFERENCES fact_encounter(encounter_key),
-    patient_key INTEGER NOT NULL REFERENCES dim_patient(patient_key),
-    diagnosis_key INTEGER NOT NULL REFERENCES dim_diagnosis(diagnosis_key),
-    diagnosis_date_key INTEGER REFERENCES dim_date(date_key),
+    encounter_key INTEGER NOT NULL REFERENCES dim.fact_encounter(encounter_key),
+    patient_key INTEGER NOT NULL REFERENCES dim.dim_patient(patient_key),
+    diagnosis_key INTEGER NOT NULL REFERENCES dim.dim_diagnosis(diagnosis_key),
+    diagnosis_date_key INTEGER REFERENCES dim.dim_date(date_key),
 
     diagnosis_type VARCHAR(50),
     rank INTEGER,
@@ -293,20 +296,20 @@ CREATE TABLE IF NOT EXISTS fact_diagnosis (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS ix_fact_diagnosis_encounter ON fact_diagnosis(encounter_key);
-CREATE INDEX IF NOT EXISTS ix_fact_diagnosis_diagnosis ON fact_diagnosis(diagnosis_key);
-CREATE INDEX IF NOT EXISTS ix_fact_diagnosis_patient ON fact_diagnosis(patient_key);
+CREATE INDEX IF NOT EXISTS ix_fact_diagnosis_encounter ON dim.fact_diagnosis(encounter_key);
+CREATE INDEX IF NOT EXISTS ix_fact_diagnosis_diagnosis ON dim.fact_diagnosis(diagnosis_key);
+CREATE INDEX IF NOT EXISTS ix_fact_diagnosis_patient ON dim.fact_diagnosis(patient_key);
 
 -- Fact: Procedures
-CREATE TABLE IF NOT EXISTS fact_procedure (
+CREATE TABLE IF NOT EXISTS dim.fact_procedure (
     fact_procedure_key SERIAL PRIMARY KEY,
 
-    encounter_key INTEGER REFERENCES fact_encounter(encounter_key),
-    patient_key INTEGER NOT NULL REFERENCES dim_patient(patient_key),
-    procedure_key INTEGER NOT NULL REFERENCES dim_procedure(procedure_key),
-    procedure_date_key INTEGER REFERENCES dim_date(date_key),
-    location_key INTEGER REFERENCES dim_location(location_key),
-    provider_key INTEGER REFERENCES dim_provider(provider_key),
+    encounter_key INTEGER REFERENCES dim.fact_encounter(encounter_key),
+    patient_key INTEGER NOT NULL REFERENCES dim.dim_patient(patient_key),
+    procedure_key INTEGER NOT NULL REFERENCES dim.dim_procedure(procedure_key),
+    procedure_date_key INTEGER REFERENCES dim.dim_date(date_key),
+    location_key INTEGER REFERENCES dim.dim_location(location_key),
+    provider_key INTEGER REFERENCES dim.dim_provider(provider_key),
 
     procedure_datetime TIMESTAMP WITH TIME ZONE,
     duration_minutes INTEGER,
@@ -319,17 +322,17 @@ CREATE TABLE IF NOT EXISTS fact_procedure (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS ix_fact_procedure_encounter ON fact_procedure(encounter_key);
-CREATE INDEX IF NOT EXISTS ix_fact_procedure_patient ON fact_procedure(patient_key);
-CREATE INDEX IF NOT EXISTS ix_fact_procedure_date ON fact_procedure(procedure_date_key);
+CREATE INDEX IF NOT EXISTS ix_fact_procedure_encounter ON dim.fact_procedure(encounter_key);
+CREATE INDEX IF NOT EXISTS ix_fact_procedure_patient ON dim.fact_procedure(patient_key);
+CREATE INDEX IF NOT EXISTS ix_fact_procedure_date ON dim.fact_procedure(procedure_date_key);
 
 -- Fact: Lab Results
-CREATE TABLE IF NOT EXISTS fact_lab_result (
+CREATE TABLE IF NOT EXISTS dim.fact_lab_result (
     fact_lab_key SERIAL PRIMARY KEY,
 
-    encounter_key INTEGER REFERENCES fact_encounter(encounter_key),
-    patient_key INTEGER NOT NULL REFERENCES dim_patient(patient_key),
-    result_date_key INTEGER REFERENCES dim_date(date_key),
+    encounter_key INTEGER REFERENCES dim.fact_encounter(encounter_key),
+    patient_key INTEGER NOT NULL REFERENCES dim.dim_patient(patient_key),
+    result_date_key INTEGER REFERENCES dim.dim_date(date_key),
 
     test_code VARCHAR(50) NOT NULL,
     test_name VARCHAR(200),
@@ -352,19 +355,19 @@ CREATE TABLE IF NOT EXISTS fact_lab_result (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS ix_fact_lab_patient ON fact_lab_result(patient_key);
-CREATE INDEX IF NOT EXISTS ix_fact_lab_encounter ON fact_lab_result(encounter_key);
-CREATE INDEX IF NOT EXISTS ix_fact_lab_test ON fact_lab_result(test_code);
-CREATE INDEX IF NOT EXISTS ix_fact_lab_date ON fact_lab_result(result_date_key);
+CREATE INDEX IF NOT EXISTS ix_fact_lab_patient ON dim.fact_lab_result(patient_key);
+CREATE INDEX IF NOT EXISTS ix_fact_lab_encounter ON dim.fact_lab_result(encounter_key);
+CREATE INDEX IF NOT EXISTS ix_fact_lab_test ON dim.fact_lab_result(test_code);
+CREATE INDEX IF NOT EXISTS ix_fact_lab_date ON dim.fact_lab_result(result_date_key);
 
 -- Fact: Vitals
-CREATE TABLE IF NOT EXISTS fact_vital (
+CREATE TABLE IF NOT EXISTS dim.fact_vital (
     fact_vital_key SERIAL PRIMARY KEY,
 
-    encounter_key INTEGER REFERENCES fact_encounter(encounter_key),
-    patient_key INTEGER NOT NULL REFERENCES dim_patient(patient_key),
-    recorded_date_key INTEGER REFERENCES dim_date(date_key),
-    location_key INTEGER REFERENCES dim_location(location_key),
+    encounter_key INTEGER REFERENCES dim.fact_encounter(encounter_key),
+    patient_key INTEGER NOT NULL REFERENCES dim.dim_patient(patient_key),
+    recorded_date_key INTEGER REFERENCES dim.dim_date(date_key),
+    location_key INTEGER REFERENCES dim.dim_location(location_key),
 
     recorded_datetime TIMESTAMP WITH TIME ZONE,
 
@@ -387,19 +390,19 @@ CREATE TABLE IF NOT EXISTS fact_vital (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS ix_fact_vital_patient ON fact_vital(patient_key);
-CREATE INDEX IF NOT EXISTS ix_fact_vital_encounter ON fact_vital(encounter_key);
-CREATE INDEX IF NOT EXISTS ix_fact_vital_date ON fact_vital(recorded_date_key);
+CREATE INDEX IF NOT EXISTS ix_fact_vital_patient ON dim.fact_vital(patient_key);
+CREATE INDEX IF NOT EXISTS ix_fact_vital_encounter ON dim.fact_vital(encounter_key);
+CREATE INDEX IF NOT EXISTS ix_fact_vital_date ON dim.fact_vital(recorded_date_key);
 
 -- Fact: Medications
-CREATE TABLE IF NOT EXISTS fact_medication (
+CREATE TABLE IF NOT EXISTS dim.fact_medication (
     fact_medication_key SERIAL PRIMARY KEY,
 
-    encounter_key INTEGER REFERENCES fact_encounter(encounter_key),
-    patient_key INTEGER NOT NULL REFERENCES dim_patient(patient_key),
-    medication_key INTEGER NOT NULL REFERENCES dim_medication(medication_key),
-    order_date_key INTEGER REFERENCES dim_date(date_key),
-    provider_key INTEGER REFERENCES dim_provider(provider_key),
+    encounter_key INTEGER REFERENCES dim.fact_encounter(encounter_key),
+    patient_key INTEGER NOT NULL REFERENCES dim.dim_patient(patient_key),
+    medication_key INTEGER NOT NULL REFERENCES dim.dim_medication(medication_key),
+    order_date_key INTEGER REFERENCES dim.dim_date(date_key),
+    provider_key INTEGER REFERENCES dim.dim_provider(provider_key),
 
     order_datetime TIMESTAMP WITH TIME ZONE,
     start_date DATE,
@@ -421,7 +424,7 @@ CREATE TABLE IF NOT EXISTS fact_medication (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS ix_fact_medication_patient ON fact_medication(patient_key);
-CREATE INDEX IF NOT EXISTS ix_fact_medication_encounter ON fact_medication(encounter_key);
-CREATE INDEX IF NOT EXISTS ix_fact_medication_medication ON fact_medication(medication_key);
-CREATE INDEX IF NOT EXISTS ix_fact_medication_date ON fact_medication(order_date_key);
+CREATE INDEX IF NOT EXISTS ix_fact_medication_patient ON dim.fact_medication(patient_key);
+CREATE INDEX IF NOT EXISTS ix_fact_medication_encounter ON dim.fact_medication(encounter_key);
+CREATE INDEX IF NOT EXISTS ix_fact_medication_medication ON dim.fact_medication(medication_key);
+CREATE INDEX IF NOT EXISTS ix_fact_medication_date ON dim.fact_medication(order_date_key);

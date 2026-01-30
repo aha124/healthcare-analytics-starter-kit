@@ -20,7 +20,7 @@
   "liveNow": false,
   "panels": [
     {
-      "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+      "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -50,11 +50,11 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+          "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT readmission_rate FROM readmission_metrics_monthly WHERE metric_month = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') ORDER BY metric_month DESC LIMIT 1",
+          "rawSql": "SELECT ROUND((rate * 100)::numeric, 1) as readmission_rate FROM metrics.metric_quality_indicator WHERE indicator_code LIKE 'READM%' AND metric_date >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') ORDER BY metric_date DESC LIMIT 1",
           "refId": "A"
         }
       ],
@@ -62,7 +62,7 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+      "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -92,19 +92,19 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+          "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT numerator * 100.0 / NULLIF(denominator, 0) as rate FROM quality_indicators_monthly WHERE indicator_code = 'MED_RECONCILIATION' AND metric_month = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') LIMIT 1",
+          "rawSql": "SELECT ROUND((SUM(CASE WHEN meets_target THEN 1 ELSE 0 END)::numeric / NULLIF(COUNT(*), 0) * 100), 1) as rate FROM metrics.metric_quality_indicator WHERE metric_date >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')",
           "refId": "A"
         }
       ],
-      "title": "Med Reconciliation Rate",
+      "title": "Quality Target Compliance",
       "type": "stat"
     },
     {
-      "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+      "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -134,11 +134,11 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+          "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT numerator * 100.0 / NULLIF(denominator, 0) as rate FROM quality_indicators_monthly WHERE indicator_code = 'CAUTI' AND metric_month = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') LIMIT 1",
+          "rawSql": "SELECT ROUND((rate * 100)::numeric, 2) as rate FROM metrics.metric_quality_indicator WHERE indicator_code = 'CAUTI' AND metric_date >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') ORDER BY metric_date DESC LIMIT 1",
           "refId": "A"
         }
       ],
@@ -146,7 +146,7 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+      "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -176,11 +176,11 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+          "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT numerator * 100.0 / NULLIF(denominator, 0) as rate FROM quality_indicators_monthly WHERE indicator_code = 'CLABSI' AND metric_month = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') LIMIT 1",
+          "rawSql": "SELECT ROUND((rate * 100)::numeric, 2) as rate FROM metrics.metric_quality_indicator WHERE indicator_code = 'CLABSI' AND metric_date >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') ORDER BY metric_date DESC LIMIT 1",
           "refId": "A"
         }
       ],
@@ -188,7 +188,7 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+      "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -232,19 +232,19 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+          "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT metric_month as time, readmission_rate as \"All Cause\", chf_readmission_rate as \"CHF\", copd_readmission_rate as \"COPD\", pneumonia_readmission_rate as \"Pneumonia\" FROM readmission_metrics_monthly WHERE metric_month >= CURRENT_DATE - INTERVAL '12 months' ORDER BY metric_month",
+          "rawSql": "SELECT metric_date as time, ROUND((rate * 100)::numeric, 2) as \"Readmission Rate\" FROM metrics.metric_quality_indicator WHERE indicator_code LIKE 'READM%' AND metric_date >= $__timeFrom()::date AND metric_date <= $__timeTo()::date ORDER BY metric_date",
           "refId": "A"
         }
       ],
-      "title": "Readmission Rates by Condition (12 Months)",
+      "title": "Readmission Rates Trend",
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+      "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -285,19 +285,19 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+          "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT metric_month as time, numerator * 100.0 / NULLIF(denominator, 0) as rate FROM quality_indicators_monthly WHERE indicator_code = 'FALL_PREVENTION' AND metric_month >= CURRENT_DATE - INTERVAL '12 months' ORDER BY metric_month",
+          "rawSql": "SELECT metric_date as time, ROUND((SUM(CASE WHEN meets_target THEN 1 ELSE 0 END)::numeric / NULLIF(COUNT(*), 0) * 100), 1) as \"Target Compliance\" FROM metrics.metric_quality_indicator WHERE metric_date >= $__timeFrom()::date AND metric_date <= $__timeTo()::date GROUP BY metric_date ORDER BY metric_date",
           "refId": "A"
         }
       ],
-      "title": "Fall Prevention Compliance (12 Months)",
+      "title": "Quality Target Compliance Trend",
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+      "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -334,11 +334,11 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+          "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT indicator_code as \"Indicator\", indicator_name as \"Description\", numerator as \"Numerator\", denominator as \"Denominator\", ROUND(numerator * 100.0 / NULLIF(denominator, 0), 1) as rate FROM quality_indicators_monthly WHERE metric_month = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') ORDER BY rate ASC",
+          "rawSql": "SELECT indicator_code as \"Indicator\", indicator_name as \"Description\", numerator as \"Numerator\", denominator as \"Denominator\", ROUND((numerator::numeric / NULLIF(denominator, 0) * 100), 1) as rate FROM metrics.metric_quality_indicator WHERE metric_date >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') ORDER BY rate ASC",
           "refId": "A"
         }
       ],
@@ -346,7 +346,7 @@
       "type": "table"
     },
     {
-      "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+      "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "continuous-GrYlRd" },
@@ -381,11 +381,11 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+          "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT metric_month as time, indicator_code as metric, numerator * 100.0 / NULLIF(denominator, 0) as value FROM quality_indicators_monthly WHERE indicator_code IN ('CAUTI', 'CLABSI', 'SSI', 'VAP') AND metric_month >= CURRENT_DATE - INTERVAL '12 months' ORDER BY metric_month",
+          "rawSql": "SELECT metric_date as time, indicator_code as metric, ROUND((rate * 100)::numeric, 2) as value FROM metrics.metric_quality_indicator WHERE indicator_code IN ('CAUTI', 'CLABSI', 'FALLS', 'PRESSURE_INJ') AND metric_date >= $__timeFrom()::date AND metric_date <= $__timeTo()::date ORDER BY metric_date",
           "refId": "A"
         }
       ],
@@ -393,7 +393,7 @@
       "type": "state-timeline"
     },
     {
-      "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+      "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -415,19 +415,19 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+          "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT primary_diagnosis_category as category, COUNT(*) as count FROM readmission_metrics_monthly WHERE metric_month >= CURRENT_DATE - INTERVAL '3 months' GROUP BY primary_diagnosis_category ORDER BY count DESC LIMIT 10",
+          "rawSql": "SELECT indicator_category as category, COUNT(*) as count FROM metrics.metric_quality_indicator WHERE metric_date >= $__timeFrom()::date AND metric_date <= $__timeTo()::date GROUP BY indicator_category ORDER BY count DESC",
           "refId": "A"
         }
       ],
-      "title": "Readmissions by Diagnosis Category",
+      "title": "Indicators by Category",
       "type": "piechart"
     },
     {
-      "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+      "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -455,10 +455,10 @@
             "mode": "absolute",
             "steps": [
               { "color": "green", "value": null },
-              { "color": "red", "value": 2.5 }
+              { "color": "red", "value": 12 }
             ]
           },
-          "unit": "none"
+          "unit": "percent"
         },
         "overrides": []
       },
@@ -471,15 +471,15 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}" },
+          "datasource": { "type": "postgres", "uid": "healthcare-analytics" },
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT metric_month as time, mortality_rate as \"Mortality Rate\", 2.5 as \"Benchmark\" FROM quality_indicators_monthly WHERE indicator_code = 'INPATIENT_MORTALITY' AND metric_month >= CURRENT_DATE - INTERVAL '12 months' ORDER BY metric_month",
+          "rawSql": "SELECT metric_date as time, ROUND((rate * 100)::numeric, 2) as \"Actual Rate\", ROUND((target_rate * 100)::numeric, 2) as \"Target\" FROM metrics.metric_quality_indicator WHERE indicator_code LIKE 'READM%' AND metric_date >= $__timeFrom()::date AND metric_date <= $__timeTo()::date ORDER BY metric_date",
           "refId": "A"
         }
       ],
-      "title": "Inpatient Mortality Rate vs Benchmark",
+      "title": "Readmission Rate vs Target",
       "type": "timeseries"
     }
   ],

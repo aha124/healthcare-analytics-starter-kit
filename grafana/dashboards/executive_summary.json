@@ -12,7 +12,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_HEALTHCARE_ANALYTICS}"
+        "uid": "healthcare-analytics"
       },
       "fieldConfig": {
         "defaults": {
@@ -48,9 +48,9 @@
       "pluginVersion": "10.2.3",
       "targets": [
         {
-          "datasource": {"type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}"},
+          "datasource": {"type": "postgres", "uid": "healthcare-analytics"},
           "format": "table",
-          "rawSql": "SELECT ROUND(AVG(occupancy_rate), 1) as occupancy FROM metric_patient_census WHERE census_date = CURRENT_DATE",
+          "rawSql": "SELECT ROUND(AVG(occupancy_rate)::numeric, 1) as occupancy FROM metrics.metric_patient_census WHERE census_date >= CURRENT_DATE - INTERVAL '1 day'",
           "refId": "A"
         }
       ],
@@ -60,7 +60,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_HEALTHCARE_ANALYTICS}"
+        "uid": "healthcare-analytics"
       },
       "fieldConfig": {
         "defaults": {
@@ -90,7 +90,9 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT SUM(midnight_census) as census FROM metric_patient_census WHERE census_date = CURRENT_DATE",
+          "datasource": {"type": "postgres", "uid": "healthcare-analytics"},
+          "format": "table",
+          "rawSql": "SELECT SUM(midnight_census) as census FROM metrics.metric_patient_census WHERE census_date >= CURRENT_DATE - INTERVAL '1 day'",
           "refId": "A"
         }
       ],
@@ -100,7 +102,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_HEALTHCARE_ANALYTICS}"
+        "uid": "healthcare-analytics"
       },
       "fieldConfig": {
         "defaults": {
@@ -132,7 +134,9 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT ROUND(AVG(readmission_rate_30_day) * 100, 1) as rate FROM metric_readmission WHERE discharge_date >= CURRENT_DATE - INTERVAL '30 days'",
+          "datasource": {"type": "postgres", "uid": "healthcare-analytics"},
+          "format": "table",
+          "rawSql": "SELECT ROUND((SUM(CASE WHEN meets_target = false THEN 1 ELSE 0 END)::numeric / NULLIF(COUNT(*), 0) * 100), 1) as rate FROM metrics.metric_quality_indicator WHERE metric_date >= CURRENT_DATE - INTERVAL '30 days' AND indicator_code LIKE 'READM%'",
           "refId": "A"
         }
       ],
@@ -142,7 +146,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_HEALTHCARE_ANALYTICS}"
+        "uid": "healthcare-analytics"
       },
       "fieldConfig": {
         "defaults": {
@@ -172,7 +176,9 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT ROUND(AVG(avg_los), 1) as los FROM metric_length_of_stay WHERE metric_date >= CURRENT_DATE - INTERVAL '30 days'",
+          "datasource": {"type": "postgres", "uid": "healthcare-analytics"},
+          "format": "table",
+          "rawSql": "SELECT ROUND(AVG(length_of_stay_days)::numeric, 1) as los FROM dim.fact_encounter WHERE discharge_datetime >= CURRENT_DATE - INTERVAL '30 days'",
           "refId": "A"
         }
       ],
@@ -182,7 +188,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_HEALTHCARE_ANALYTICS}"
+        "uid": "healthcare-analytics"
       },
       "fieldConfig": {
         "defaults": {
@@ -220,18 +226,19 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT census_date as time, ROUND(AVG(occupancy_rate), 1) as occupancy FROM metric_patient_census WHERE census_date >= CURRENT_DATE - INTERVAL '30 days' GROUP BY census_date ORDER BY census_date",
+          "datasource": {"type": "postgres", "uid": "healthcare-analytics"},
+          "rawSql": "SELECT census_date as time, ROUND(AVG(occupancy_rate)::numeric, 1) as occupancy FROM metrics.metric_patient_census WHERE census_date >= $__timeFrom()::date AND census_date <= $__timeTo()::date GROUP BY census_date ORDER BY census_date",
           "refId": "A",
           "format": "time_series"
         }
       ],
-      "title": "Occupancy Trend (30 Days)",
+      "title": "Occupancy Trend",
       "type": "timeseries"
     },
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_HEALTHCARE_ANALYTICS}"
+        "uid": "healthcare-analytics"
       },
       "fieldConfig": {
         "defaults": {
@@ -268,18 +275,19 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT census_date as time, SUM(admissions) as admissions, SUM(discharges) as discharges FROM metric_patient_census WHERE census_date >= CURRENT_DATE - INTERVAL '30 days' GROUP BY census_date ORDER BY census_date",
+          "datasource": {"type": "postgres", "uid": "healthcare-analytics"},
+          "rawSql": "SELECT census_date as time, SUM(admissions) as admissions, SUM(discharges) as discharges FROM metrics.metric_patient_census WHERE census_date >= $__timeFrom()::date AND census_date <= $__timeTo()::date GROUP BY census_date ORDER BY census_date",
           "refId": "A",
           "format": "time_series"
         }
       ],
-      "title": "Admissions vs Discharges (30 Days)",
+      "title": "Admissions vs Discharges",
       "type": "timeseries"
     },
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_HEALTHCARE_ANALYTICS}"
+        "uid": "healthcare-analytics"
       },
       "fieldConfig": {
         "defaults": {
@@ -320,8 +328,10 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT unit, midnight_census as patients, operational_beds as beds, ROUND(occupancy_rate, 0) as occupancy_pct, admissions, discharges FROM metric_patient_census c JOIN dim_location l ON c.unit = l.unit WHERE census_date = CURRENT_DATE ORDER BY occupancy_rate DESC",
-          "refId": "A"
+          "datasource": {"type": "postgres", "uid": "healthcare-analytics"},
+          "rawSql": "SELECT c.unit, c.midnight_census as patients, l.operational_beds as beds, ROUND(c.occupancy_rate::numeric, 0) as occupancy_pct, c.admissions, c.discharges FROM metrics.metric_patient_census c JOIN dim.dim_location l ON c.unit = l.unit WHERE c.census_date >= CURRENT_DATE - INTERVAL '1 day' ORDER BY c.occupancy_rate DESC",
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Census by Unit",
@@ -330,7 +340,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_HEALTHCARE_ANALYTICS}"
+        "uid": "healthcare-analytics"
       },
       "fieldConfig": {
         "defaults": {
@@ -349,11 +359,13 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT encounter_type, COUNT(*) as count FROM fact_encounter WHERE admission_date_key >= (SELECT date_key FROM dim_date WHERE full_date = CURRENT_DATE - INTERVAL '30 days') GROUP BY encounter_type",
-          "refId": "A"
+          "datasource": {"type": "postgres", "uid": "healthcare-analytics"},
+          "rawSql": "SELECT encounter_type, COUNT(*) as count FROM dim.fact_encounter WHERE admission_datetime >= $__timeFrom()::timestamp AND admission_datetime <= $__timeTo()::timestamp GROUP BY encounter_type",
+          "refId": "A",
+          "format": "table"
         }
       ],
-      "title": "Encounters by Type (30 Days)",
+      "title": "Encounters by Type",
       "type": "piechart"
     }
   ],
@@ -364,14 +376,14 @@
     "list": [
       {
         "current": {},
-        "datasource": {"type": "postgres", "uid": "${DS_HEALTHCARE_ANALYTICS}"},
-        "definition": "SELECT DISTINCT facility FROM metric_patient_census ORDER BY facility",
+        "datasource": {"type": "postgres", "uid": "healthcare-analytics"},
+        "definition": "SELECT DISTINCT facility FROM metrics.metric_patient_census ORDER BY facility",
         "hide": 0,
         "includeAll": true,
         "multi": false,
         "name": "facility",
         "options": [],
-        "query": "SELECT DISTINCT facility FROM metric_patient_census ORDER BY facility",
+        "query": "SELECT DISTINCT facility FROM metrics.metric_patient_census ORDER BY facility",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,

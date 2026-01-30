@@ -36,21 +36,45 @@ def load_sample_data():
         logger.info(f"Executing {seed_file.name}")
         sql_content = seed_file.read_text()
 
-        # Split by semicolon and execute each statement
-        statements = sql_content.split(";")
-        executed = 0
+        # Use raw DBAPI connection to execute full script at once
+        # This handles DO blocks and complex statements correctly
+        raw_conn = conn.connection.dbapi_connection
+        with raw_conn.cursor() as cursor:
+            try:
+                cursor.execute(sql_content)
+                raw_conn.commit()
+                logger.info(f"Successfully executed {seed_file.name}")
+            except Exception as e:
+                raw_conn.rollback()
+                logger.error(f"Error executing {seed_file.name}: {e}")
+                return False
 
-        for statement in statements:
-            statement = statement.strip()
-            if statement and not statement.startswith("--"):
-                try:
-                    conn.execute(text(statement))
-                    executed += 1
-                except Exception as e:
-                    logger.warning(f"Statement failed: {str(e)[:100]}")
+        # Verify data was loaded by counting records
+        logger.info("Verifying loaded data...")
 
-        conn.commit()
-        logger.info(f"Executed {executed} statements")
+        verification_queries = [
+            ("dim.dim_date", "Date dimension records"),
+            ("dim.dim_patient", "Patients"),
+            ("dim.dim_location", "Locations"),
+            ("dim.dim_provider", "Providers"),
+            ("dim.dim_diagnosis", "Diagnoses"),
+            ("dim.fact_encounter", "Encounters"),
+            ("metrics.metric_patient_census", "Census records"),
+            ("metrics.metric_ed_throughput", "ED throughput records"),
+            ("metrics.metric_quality_indicator", "Quality indicators"),
+        ]
+
+        total_records = 0
+        for table, description in verification_queries:
+            try:
+                result = conn.execute(text(f"SELECT COUNT(*) FROM {table}"))
+                count = result.scalar()
+                total_records += count
+                logger.info(f"  {description}: {count:,}")
+            except Exception as e:
+                logger.warning(f"  {description}: Error querying - {e}")
+
+        logger.info(f"Total records loaded: {total_records:,}")
 
     logger.info("Sample data loaded successfully")
     return True
@@ -64,6 +88,7 @@ def main():
         print("You can now view the data in Grafana dashboards.")
     else:
         print("\nFailed to load sample data. Check the logs for details.")
+        exit(1)
 
 
 if __name__ == "__main__":

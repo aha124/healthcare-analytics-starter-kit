@@ -66,6 +66,7 @@ class StagingPatient(Base, TimestampMixin):
         Index("ix_staging_patient_mrn", "mrn"),
         Index("ix_staging_patient_batch", "batch_id"),
         Index("ix_staging_patient_processed", "is_processed"),
+        {"schema": "staging"},
     )
 
 
@@ -125,6 +126,7 @@ class StagingEncounter(Base, TimestampMixin):
         Index("ix_staging_encounter_patient", "patient_source_id"),
         Index("ix_staging_encounter_batch", "batch_id"),
         Index("ix_staging_encounter_dates", "admission_date", "discharge_date"),
+        {"schema": "staging"},
     )
 
 
@@ -179,6 +181,7 @@ class StagingDiagnosis(Base, TimestampMixin):
         Index("ix_staging_diagnosis_code", "code"),
         Index("ix_staging_diagnosis_encounter", "encounter_source_id"),
         Index("ix_staging_diagnosis_batch", "batch_id"),
+        {"schema": "staging"},
     )
 
 
@@ -233,6 +236,7 @@ class StagingProcedure(Base, TimestampMixin):
         Index("ix_staging_procedure_code", "code"),
         Index("ix_staging_procedure_encounter", "encounter_source_id"),
         Index("ix_staging_procedure_batch", "batch_id"),
+        {"schema": "staging"},
     )
 
 
@@ -297,6 +301,7 @@ class StagingLabResult(Base, TimestampMixin):
         Index("ix_staging_lab_patient", "patient_source_id"),
         Index("ix_staging_lab_date", "effective_date"),
         Index("ix_staging_lab_batch", "batch_id"),
+        {"schema": "staging"},
     )
 
 
@@ -362,6 +367,7 @@ class StagingVital(Base, TimestampMixin):
         Index("ix_staging_vital_patient", "patient_source_id"),
         Index("ix_staging_vital_date", "recorded_date"),
         Index("ix_staging_vital_batch", "batch_id"),
+        {"schema": "staging"},
     )
 
 
@@ -429,4 +435,5 @@ class StagingMedication(Base, TimestampMixin):
         Index("ix_staging_medication_patient", "patient_source_id"),
         Index("ix_staging_medication_name", "medication_name"),
         Index("ix_staging_medication_batch", "batch_id"),
+        {"schema": "staging"},
     )
